@@ -9,4 +9,4 @@ It has been republished in this folder in order to keep it up to date.
 If you use any part of the code, please cite [1].
 
 # References
-1 - Marchetti, F., Minisci, E. (2021). Inclusive Genetic Programming. In: Hu, T., Lourenço, N., Medvet, E. (eds) Genetic Programming. EuroGP 2021. Lecture Notes in Computer Science(), vol 12691. Springer, Cham. https://doi.org/10.1007/978-3-030-72812-0_4 
+1. Marchetti, F., Minisci, E. (2021). Inclusive Genetic Programming. In: Hu, T., Lourenço, N., Medvet, E. (eds) Genetic Programming. EuroGP 2021. Lecture Notes in Computer Science(), vol 12691. Springer, Cham. https://doi.org/10.1007/978-3-030-72812-0_4 
