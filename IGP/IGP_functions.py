@@ -23,7 +23,8 @@
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
 """
-File containing the modification introduced into the DEAP library and new functions and classes developed for the Inclusive Genetic Programmign algorithm [3]
+File containing the modification introduced into the DEAP library and new functions and classes developed for the
+Inclusive Genetic Programming algorithm [3]
 
 References:
 [1] Entropy-Driven Adaptive Representation. J. P. Rosca. Proceedings of the Workshop on Genetic Programming: From Theory
@@ -56,7 +57,7 @@ def InclusiveTournament(mu, organized_pop, good_indexes, selected_individuals, f
 
     Rationale behind InclusiveTournament: a double tournament selection is performed in each category, so to maintain
     diversity. Double Tournament is used so to avoid bloat. An exploited measure is used to point out when a category is
-    completely exploited. For example, if in a category are present only 4 individuals, the tournament will be
+    completely exploited. For examples, if in a category are present only 4 individuals, the tournament will be
     performed at maximum 4 times in that category. This to avoid a spreading of clones of the same individuals.
     """
 
@@ -298,7 +299,8 @@ def varOr_IGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb
         "The sum of the crossover and mutation probabilities must be equal to 1.0. The best individual is always passsed")
 
     offspring = []
-    # retrive subset of feasible individuals. Feasible means that the second fitness, i.e. the penalty, is 0.
+
+    # retrieve subset of feasible individuals. Feasible means that the second fitness, i.e. the penalty, is 0.
     sub_pop = subset_feasible(population)
 
     len_subpop = len(sub_pop)
@@ -352,7 +354,7 @@ def varOr_IGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb
                 ind1, ind2 = map(toolbox.clone, [selBest_IGP(sub_div["cat{}".format(int(cat[0]))]),
                                                  random.choice(sub_div["cat{}".format(int(cat[1]))])])
                 tries += 1
-            # peform crossover on selected individuals
+            # perform crossover on selected individuals
             ind1, ind2 = toolbox.mate(ind1, ind2)
             del ind1.fitness.values
             offspring.append(ind1)
@@ -509,7 +511,7 @@ def selDoubleTournament_IGP(individuals, k, fitness_size, parsimony_size, creato
 
 ####################### MODIFIED HALL OF FAME #############################
 
-class HallOfFame_IGP(object):
+class HallOfFame_modified(object):
     """
     Modified HallOfFame class taken from the DEAP library (https://github.com/DEAP/deap/blob/master/deap/tools/support.py#L488). 
     The introduced modifications allow for:
@@ -707,7 +709,7 @@ class HallOfFame_IGP(object):
 
 def eaMuPlusLambdaTol(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset, creator,
                       stats=None, halloffame=None, verbose=__debug__, **kwargs):
-    r"""
+    """
     Modification of eaMuPlusLambda function from DEAP library, used by IGP. Modifications include:
         - use of tolerance value for the first fitness function below which the evolution is stopped
         - added population class
@@ -871,7 +873,9 @@ def xmateMultiple(ind1, ind2):
 
 
 def xmutMultiple(ind, expr, unipb, shrpb, inspb, pset, creator):
-    """From [2] and modified. Added several mutations possibilities."""
+    """
+    From [2] and modified. Added several mutations possibilities.
+    """
     choice = random.random()
     try:
         if type(ind[0]) == creator.SubIndividual and len(ind) > 1:
