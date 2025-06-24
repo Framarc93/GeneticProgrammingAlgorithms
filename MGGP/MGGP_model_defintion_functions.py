@@ -22,19 +22,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-
 from deap import gp, creator, base, tools
 import operator
 import numpy as np
 import common.GP_PrimitiveSet as gpprim
 import random
-from FIGP.FIGP_functions import InclusiveTournament3D
-from examples.regression.evaluate_functions import evaluate_IGP_FIGP
-from IGP.IGP_functions import xmutMultiple
+from MGGP.MGGP_functions import staticLimit_MGGP, xmate_MGGP, xmut_MGGP, initRepeatRandom, selDoubleTournament_MGGP
 from functools import partial
 
-def define_FIGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n):
-    ####################################    P R I M I T I V E  -  S E T     ################################################
+
+def define_MGGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, **kwargs):
+
+    NgenesMax = kwargs['kwargs']["NgenesMax"]
+    stdCxpb = kwargs['kwargs']["stdCxpb"]
 
     pset = gp.PrimitiveSet("Main", terminals)
     pset.addPrimitive(operator.add, 2)
@@ -62,25 +62,29 @@ def define_FIGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n):
         del pset.mapping['ARG{}'.format(i)]
 
     ################################################## TOOLBOX #############################################################
+    d = []
+    A = []
+    wLen = 0  # weighted length
 
-    creator.create("Fitness", base.Fitness, weights=(-1.0, -1.0))
-    creator.create("Individual", gp.PrimitiveTree, fitness=creator.Fitness, fitness_validation=creator.Fitness)
+    creator.create("Fitness", base.Fitness, weights=(-1.0,))
+    creator.create("Individual", list, fitness=creator.Fitness, fitness_validation=creator.Fitness, w=d, A=A, wLen=wLen, height=1)
+    creator.create("SubIndividual", gp.PrimitiveTree)
 
     toolbox = base.Toolbox()
 
-    toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=1, max_=4)
-    toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
+    toolbox.register("expr", gp.genHalfAndHalf, pset=pset, type_=pset.ret, min_=1, max_=4)
+    toolbox.register("leg", tools.initIterate, creator.SubIndividual, toolbox.expr)
+    toolbox.register("legs", initRepeatRandom, list, toolbox.leg, n=NgenesMax)
+    toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.legs)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("compile", gp.compile, pset=pset)
-    toolbox.register("evaluate", evaluate_IGP_FIGP)
-    toolbox.register("select", InclusiveTournament3D, selected_individuals=1, fitness_size=2, parsimony_size=1.6, creator=creator)
-    toolbox.register("mate", gp.cxOnePoint)
+    toolbox.register("select", selDoubleTournament_MGGP, fitness_size=2, parsimony_size=1.2, fitness_first=True)
+    toolbox.register("mate", xmate_MGGP, NgenesMax=NgenesMax, stdCxpb=stdCxpb)
     toolbox.register("expr_mut", gp.genHalfAndHalf, min_=1, max_=4)
-    toolbox.register("mutate", xmutMultiple, expr=toolbox.expr_mut, unipb=0.55, shrpb=0.05, inspb=0.25, pset=pset,
-                     creator=creator)
-    toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=limit_height))
-    toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max_value=limit_height))
-    toolbox.decorate("mate", gp.staticLimit(key=len, max_value=limit_size))
-    toolbox.decorate("mutate", gp.staticLimit(key=len, max_value=limit_size))
+    toolbox.register("mutate", xmut_MGGP, pset=pset, expr=toolbox.expr_mut, unipb=0.9, nodepb=0.05)
+    toolbox.decorate("mate", staticLimit_MGGP(key=operator.attrgetter("height"), max_value=limit_height))
+    toolbox.decorate("mutate", staticLimit_MGGP(key=operator.attrgetter("height"), max_value=limit_height))
+    toolbox.decorate("mate", staticLimit_MGGP(key=len, max_value=limit_size))
+    toolbox.decorate("mutate", staticLimit_MGGP(key=len, max_value=limit_size))
 
     return pset, creator, toolbox

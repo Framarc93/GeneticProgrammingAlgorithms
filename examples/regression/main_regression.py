@@ -28,12 +28,12 @@ This script is the main for the regression application. The user must select the
 
 from IGP.main_functions import main_IGP_regression
 from FIGP.main_functions import main_FIGP_regression
+from MGGP.main_functions import main_MGGP_regression
 from data.data_handling import retrieve_dataset
 import yaml
 from yaml.loader import SafeLoader
 import os
 import numpy as np
-import multiprocess
 from examples.regression.data.data_handling import select_testcase
 from time import time
 from deap import gp
@@ -41,6 +41,8 @@ from copy import copy
 import matplotlib.pyplot as plt
 from IGP.IGP_model_definition_functions import define_IGP_model
 from FIGP.FIGP_model_definition_functions import define_FIGP_model
+from MGGP.MGGP_model_defintion_functions import define_MGGP_model
+from MGGP.MGGP_functions import build_funcString
 
 #################################################################################################################
 
@@ -48,7 +50,7 @@ from FIGP.FIGP_model_definition_functions import define_FIGP_model
 
 #################################################################################################################
 
-algo  = "FIGP"         # select the GP algorithm. Choose between IGP, FIGP and MGGP
+algo  = "MGGP"         # select the GP algorithm. Choose between IGP, FIGP and MGGP
 bench = "503_wind"    # select the benchmark
 
 match algo:
@@ -58,6 +60,9 @@ match algo:
     case "FIGP":
         evaluation_function = main_FIGP_regression
         define_GP_model = define_FIGP_model
+    case "MGGP":
+        evaluation_function = main_MGGP_regression
+        define_GP_model = define_MGGP_model
     case _:
         print("Select a GP algorithm between IGP, FIGP and MGGP.")
 
@@ -86,9 +91,12 @@ cxpb = configs['cxpb']
 cx_lim = configs['cx_lim']
 test_perc = configs['test_perc']
 val_perc = configs['val_perc']
+NgenesMax = configs['NgenesMax']
+stdCxpb = configs['stdCxpb']
+
 Mu = int(size_pop)
 Lambda = int(size_pop * 1.2)
-nbCPU = multiprocess.cpu_count() # threads to use
+nbCPU = 1#multiprocess.cpu_count() # threads to use
 
 # create save folder
 save_path = configs["save_path"] + '{}_{}/'.format(algo, bench)
@@ -104,7 +112,8 @@ terminals, X_train, y_train, X_val, y_val, X_test, y_test = select_testcase(benc
 
 for n in range(ntot):
 
-    pset, creator, toolbox = define_GP_model(terminals, nEph, Eph_max, limit_height, limit_size, n)
+    pset, creator, toolbox = define_GP_model(terminals, nEph, Eph_max, limit_height, limit_size, n,
+                                             kwargs={'NgenesMax': NgenesMax, 'stdCxpb': stdCxpb})
 
     if __name__ == "__main__":
 
@@ -116,27 +125,45 @@ for n in range(ntot):
         print("----------------------- Iteration {} ---------------------------".format(n))
 
         start = time()
-        pop, log, hof, pop_statistics, ind_lengths, pset = evaluation_function(size_pop, size_gen, Mu, Lambda,
-                                                                                        cxpb, mutpb, nbCPU, terminals,
-                                                                                        X_train, y_train, X_val, y_val,
-                                                                                        save_gen, fit_tol, cx_lim,
-                                                                                        cat_number_fit, cat_number_height,
-                                                                                        cat_number_len, fit_scale,
-                                                                                        save_path_iter, save_pop,
-                                                                                        pset, creator, toolbox)
+
+        pop, log, hof, pop_statistics, ind_lengths, pset = evaluation_function(size_pop, size_gen, Mu, Lambda, cxpb,
+                                                                               mutpb, nbCPU, terminals, X_train,
+                                                                               y_train, X_val, y_val, save_gen,
+                                                                               fit_tol, cx_lim, cat_number_fit,
+                                                                               cat_number_height, cat_number_len,
+                                                                               fit_scale, save_path_iter, save_pop,
+                                                                               pset, creator, toolbox, NgenesMax,
+                                                                               stdCxpb)
         end = time()
 
         t_offdesign = end - start
 
         best_ind = hof[-1]
-        print("Best training individual: ", best_ind)
-        print("Best training fitness:", best_ind.fitness)
+        if algo == "MGGP":
+            string = str(best_ind.w[0])
+            st = 1
+            while st <= len(best_ind):
+                string = string + "+" + str(best_ind.w[st]) + "*" + str(best_ind[st - 1])
+                st += 1
+            print("\n Best training individual: ", string)
+        else:
+            print("\n Best training individual: ", best_ind)
+        print("Best training fitness:", best_ind.fitness.values[0])
 
         fitness_test = []
         min_test = 100
         RMSE_train = 0
         for i in range(size_gen):
             best_ind = np.load(save_path_iter + 'Best_ind_{}'.format(i), allow_pickle=True)
+
+            if algo == "MGGP":
+                string = str(best_ind.w[0])
+                st = 1
+                while st <= len(best_ind):
+                    string = string + "+" + str(best_ind.w[st]) + "*" + str(best_ind[st - 1])
+                    st += 1
+                best_ind = build_funcString(best_ind.w, best_ind)
+
             f = gp.compile(best_ind, pset=pset)
             y_best_test = f(*X_test)
             err_test = y_test - y_best_test
