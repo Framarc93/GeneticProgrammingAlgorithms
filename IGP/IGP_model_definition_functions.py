@@ -29,10 +29,10 @@ import numpy as np
 import common.GP_PrimitiveSet as gpprim
 import random
 from IGP.IGP_functions import InclusiveTournament, xmutMultiple
-from examples.regression.evaluate_functions import evaluate_IGP
+from examples.regression.evaluate_functions import evaluate_IGP_FIGP
 from functools import partial
 
-def define_GP_model(terminals, nEph, Eph_max, limit_height, limit_size, n):
+def define_IGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n):
     ####################################    P R I M I T I V E  -  S E T     ################################################
 
     pset = gp.PrimitiveSet("Main", terminals)
@@ -50,7 +50,6 @@ def define_GP_model(terminals, nEph, Eph_max, limit_height, limit_size, n):
 
     def ephemeral_creation(Eph_max):
         return round(random.uniform(-Eph_max, Eph_max), 4)
-
 
     for i in range(nEph):
         pset.addEphemeralConstant("rand{}_{}".format(i, n), partial(ephemeral_creation, Eph_max=Eph_max))
@@ -72,7 +71,7 @@ def define_GP_model(terminals, nEph, Eph_max, limit_height, limit_size, n):
     toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("compile", gp.compile, pset=pset)
-    toolbox.register("evaluate", evaluate_IGP)
+    toolbox.register("evaluate", evaluate_IGP_FIGP)
     toolbox.register("select", InclusiveTournament, selected_individuals=1, fitness_size=2, parsimony_size=1.6,
                      creator=creator)
     toolbox.register("mate", gp.cxOnePoint)  ### NEW ##

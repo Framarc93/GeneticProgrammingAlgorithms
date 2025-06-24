@@ -29,19 +29,22 @@ Script containing the main functions for the regression and control applications
 
 import multiprocess
 import numpy as np
-from IGP.GP_model_definition_functions import define_GP_model
+
 from IGP.IGP_functions import POP_geno, HallOfFame_modified, Min, eaMuPlusLambdaTol
 from deap import tools
 
 
 def main_IGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, terminals, X_train, y_train, X_val, y_val,
-                        save_gen, fit_tol, cx_lim, cat_number_fit, cat_number_height, cat_number_len, fit_scale, nEph,
-                        Eph_max, limit_height, limit_size, n, save_path):
+                        save_gen, fit_tol, cx_lim, cat_number_fit, cat_number_height, cat_number_len, fit_scale,
+                        save_path, save_pop, pset, creator, toolbox):
 
-    pset, creator, toolbox = define_GP_model(terminals, nEph, Eph_max, limit_height, limit_size, n)
 
-    pool = multiprocess.Pool(nbCPU)
-    toolbox.register('map', pool.map)
+
+    if nbCPU == 1:
+        toolbox.register('map', map)
+    else:
+        pool = multiprocess.Pool(nbCPU)
+        toolbox.register('map', pool.map)
     old_entropy = 0
     for i in range(200):
         pop = POP_geno(toolbox.population(n=size_pop), creator)
@@ -65,7 +68,7 @@ def main_IGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, term
 
     ####################################   EVOLUTIONARY ALGORITHM   -  EXECUTION   ###################################
 
-    pop, log, pop_statistics, ind_lengths, hof, hof_val = eaMuPlusLambdaTol(best_pop, toolbox, Mu, Lambda, size_gen, cxpb,
+    pop, log, pop_statistics, ind_lengths, hof = eaMuPlusLambdaTol(best_pop, toolbox, Mu, Lambda, size_gen, cxpb,
                                                                             mutpb, pset, creator, stats=mstats,
                                                                             X_train=X_train, y_train=y_train,
                                                                             X_val=X_val, y_val=y_val, save_gen=save_gen,
@@ -74,10 +77,12 @@ def main_IGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, term
                                                                             cat_number_height=cat_number_height,
                                                                             cat_number_len=cat_number_len,
                                                                             cat_number_fit=cat_number_fit,
-                                                                            fit_scale=fit_scale, save_path=save_path)
+                                                                            fit_scale=fit_scale, save_path=save_path,
+                                                                            save_pop=save_pop)
 
     ####################################################################################################################
-    pool.close()
-    pool.join()
-    return pop, log, hof, hof_val, pop_statistics, ind_lengths, pset
+    if nbCPU != 1:
+        pool.close()
+        pool.join()
+    return pop, log, hof, pop_statistics, ind_lengths, pset
 

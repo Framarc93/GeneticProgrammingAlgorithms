@@ -27,6 +27,7 @@ This script is the main for the regression application. The user must select the
 """
 
 from IGP.main_functions import main_IGP_regression
+from FIGP.main_functions import main_FIGP_regression
 from data.data_handling import retrieve_dataset
 import yaml
 from yaml.loader import SafeLoader
@@ -38,60 +39,75 @@ from time import time
 from deap import gp
 from copy import copy
 import matplotlib.pyplot as plt
+from IGP.IGP_model_definition_functions import define_IGP_model
+from FIGP.FIGP_model_definition_functions import define_FIGP_model
+
+#################################################################################################################
+
+# This section must remain outside the if __name__=="__main__" otherwise there are issue with the multiprocessing
+
+#################################################################################################################
+
+algo  = "FIGP"         # select the GP algorithm. Choose between IGP, FIGP and MGGP
+bench = "503_wind"    # select the benchmark
+
+match algo:
+    case "IGP":
+        evaluation_function = main_IGP_regression
+        define_GP_model = define_IGP_model
+    case "FIGP":
+        evaluation_function = main_FIGP_regression
+        define_GP_model = define_FIGP_model
+    case _:
+        print("Select a GP algorithm between IGP, FIGP and MGGP.")
 
 
-if __name__ == "__main__":
+retrieve_dataset(bench) # download and shuffle dataset
 
-    algo  = "IGP"         # select the GP algorithm. Choose between IGP, FIGP and MGGP
-    bench = "503_wind"    # select the benchmark
+with open('regression_config.yaml') as f:
+    configs = yaml.load(f, Loader=SafeLoader) # load configs
 
-    match algo:
-        case "IGP":
-            evaluation_function = main_IGP_regression
-        case _:
-            print("Select a GP algorithm between IGP, FIGP and MGGP.")
+nEph = configs['nEph']
+Eph_max = configs['Eph_max']
+limit_height = configs['limit_height']  # Max height (complexity) of the gp law
+limit_size = configs['limit_size']  # Max size (complexity) of the gp law
+size_pop = configs['size_pop']
+size_gen = configs['size_gen']  # Gen size
+cat_number_len = configs['cat_number_len']
+cat_number_fit = configs['cat_number_fit']
+cat_number_height = configs['cat_number_height']
+fit_scale = configs['fit_scale']
+fit_tol = configs['fit_tol']
+ntot = 1  # configs['ntot']
+save_gen = configs['save_gen']
+save_pop = configs['save_pop']
+mutpb = configs['mutpb']
+cxpb = configs['cxpb']
+cx_lim = configs['cx_lim']
+test_perc = configs['test_perc']
+val_perc = configs['val_perc']
+Mu = int(size_pop)
+Lambda = int(size_pop * 1.2)
+nbCPU = multiprocess.cpu_count() # threads to use
 
+# create save folder
+save_path = configs["save_path"] + '{}_{}/'.format(algo, bench)
+try:
+    os.makedirs(save_path)
+except FileExistsError:
+    pass
 
-    retrieve_dataset(bench) # download and shuffle dataset
+# define quantities to save
+to_save = np.array(['t_evaluate', 'RMSE_train', 'RMSE_test'])
 
-    with open('regression_config.yaml') as f:
-        configs = yaml.load(f, Loader=SafeLoader) # load configs
+terminals, X_train, y_train, X_val, y_val, X_test, y_test = select_testcase(bench, test_perc, val_perc)
 
-    nEph = configs['nEph']
-    Eph_max = configs['Eph_max']
-    limit_height = configs['limit_height']  # Max height (complexity) of the gp law
-    limit_size = configs['limit_size']  # Max size (complexity) of the gp law
-    size_pop = configs['size_pop']
-    size_gen = configs['size_gen']  # Gen size
-    cat_number_len = configs['cat_number_len']
-    cat_number_fit = configs['cat_number_fit']
-    cat_number_height = configs['cat_number_height']
-    fit_scale = configs['fit_scale']
-    fit_tol = configs['fit_tol']
-    ntot = 1  # configs['ntot']
-    save_gen = configs['save_gen']
-    mutpb = configs['mutpb']
-    cxpb = configs['cxpb']
-    cx_lim = configs['cx_lim']
-    test_perc = configs['test_perc']
-    val_perc = configs['val_perc']
-    Mu = int(size_pop)
-    Lambda = int(size_pop * 1.2)
-    nbCPU = multiprocess.cpu_count() # threads to use
+for n in range(ntot):
 
-    # create save folder
-    save_path = configs["save_path"] + 'IGP_{}/'.format(bench)
-    try:
-        os.makedirs(save_path)
-    except FileExistsError:
-        pass
+    pset, creator, toolbox = define_GP_model(terminals, nEph, Eph_max, limit_height, limit_size, n)
 
-    # define quantities to save
-    to_save = np.array(['t_evaluate', 'RMSE_train', 'RMSE_test'])
+    if __name__ == "__main__":
 
-    terminals, X_train, y_train, X_val, y_val, X_test, y_test = select_testcase(bench, test_perc, val_perc)
-
-    for n in range(ntot):
         save_path_iter = save_path + 'Sim{}/'.format(n)
         try:
             os.makedirs(save_path_iter)
@@ -100,21 +116,24 @@ if __name__ == "__main__":
         print("----------------------- Iteration {} ---------------------------".format(n))
 
         start = time()
-        pop, log, hof, hof_val, pop_statistics, ind_lengths, pset = evaluation_function(size_pop, size_gen, Mu, Lambda,
+        pop, log, hof, pop_statistics, ind_lengths, pset = evaluation_function(size_pop, size_gen, Mu, Lambda,
                                                                                         cxpb, mutpb, nbCPU, terminals,
                                                                                         X_train, y_train, X_val, y_val,
                                                                                         save_gen, fit_tol, cx_lim,
                                                                                         cat_number_fit, cat_number_height,
-                                                                                        cat_number_len, fit_scale, nEph,
-                                                                                        Eph_max, limit_height, limit_size,
-                                                                                        n, save_path_iter)
+                                                                                        cat_number_len, fit_scale,
+                                                                                        save_path_iter, save_pop,
+                                                                                        pset, creator, toolbox)
         end = time()
 
         t_offdesign = end - start
 
+        best_ind = hof[-1]
+        print("Best training individual: ", best_ind)
+        print("Best training fitness:", best_ind.fitness)
+
         fitness_test = []
         min_test = 100
-        min_train = 100
         RMSE_train = 0
         for i in range(size_gen):
             best_ind = np.load(save_path_iter + 'Best_ind_{}'.format(i), allow_pickle=True)
@@ -128,6 +147,8 @@ if __name__ == "__main__":
                 y_best_train = f(*X_train)
                 err_train = y_train - y_best_train
                 RMSE_train = np.sqrt(sum(err_train ** 2) / (len(err_train)))
+
+        # Plot train, validation and test fitness evolution
         plt.figure(0)
         plt.plot(np.linspace(0, size_gen - 1, size_gen), np.array(log.chapters["fitness"].select("min"))[:,0], label='Train')
         plt.plot(np.linspace(0, size_gen - 1, size_gen), np.array(log.chapters["fitness_val"].select("min"))[:,0], label='Validation')
@@ -136,9 +157,8 @@ if __name__ == "__main__":
         plt.ylabel('RMSE')
         plt.legend(loc='best')
         plt.savefig(save_path_iter + "fitness_evol.jpg".format(n))
-        best_ind = hof[0]
-        print(best_ind)
-        print(best_ind.fitness)
+
+        # save data
         np.save(save_path + '{}_{}_{}_train_fit_evol.npy'.format(n, algo, bench), np.array(log.chapters["fitness"].select("min"))[:,0])
         np.save(save_path + '{}_{}_{}_test_fit_evol.npy'.format(n, algo, bench), fitness_test)
         np.save(save_path + '{}_{}_{}_val_fit_evol.npy'.format(n, algo, bench), np.array(log.chapters["fitness_val"].select("min"))[:,0])

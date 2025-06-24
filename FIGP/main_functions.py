@@ -28,19 +28,26 @@ from deap import gp
 from copy import copy
 from FIGP.FIGP_functions import POP_pheno_3D_2fit
 import numpy as np
+from IGP.IGP_functions import HallOfFame_modified, Min
+from deap import tools
+from FIGP.FIGP_functions import eaMuPlusLambdaTol_pheno_2fit
 
+def main_FIGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, terminals, X_train, y_train, X_val, y_val,
+                         save_gen, fit_tol, cx_lim, cat_number_fit, cat_number_height, cat_number_len, fit_scale,
+                         save_path_iter, save_pop, pset, creator, toolbox):
 
-def main_FIGP_regression(bench, configs):
-
-    pool = multiprocess.Pool(nbCPU)
-    toolbox.register("map", pool.map)
+    if nbCPU == 1:
+        toolbox.register('map', map)
+    else:
+        pool = multiprocess.Pool(nbCPU)
+        toolbox.register("map", pool.map)
 
     best_pop = []
 
     old_entropy = 0
 
     for i in range(100):
-        pop = toolbox.population(n=size_pop_tot)
+        pop = toolbox.population(n=size_pop)
 
         fitnesses = toolbox.map(partial(toolbox.evaluate, pset=pset, compile=gp.compile, kwargs={'X_train':X_train,
                                         'y_train':y_train, 'X_val':X_val, 'y_val':y_val}), pop)
@@ -59,9 +66,9 @@ def main_FIGP_regression(bench, configs):
             best_pop = copy(pop_pheno.items)
             old_entropy = copy(entropy)
 
-    hof = gpfuns.HallOfFame(10)
+    hof = HallOfFame_modified(10)
 
-    print("INITIAL POP SIZE: %d" % size_pop_tot)
+    print("INITIAL POP SIZE: %d" % size_pop)
     print("GEN SIZE: %d" % size_gen)
     print("\n")
 
@@ -70,19 +77,22 @@ def main_FIGP_regression(bench, configs):
     mstats = tools.MultiStatistics(fitness=stats_fit, fitness_val=stats_fit_val)
 
     mstats.register("avg", np.mean, axis=0)
-    mstats.register("min", gpfuns.Min)
+    mstats.register("min", Min)
 
     ####################################   EVOLUTIONARY ALGORITHM   -  EXECUTION   ###################################
 
-    pop, log, pop_statistics, ind_lengths = gpfuns.eaMuPlusLambdaTol_pheno_2fit(best_pop, toolbox, Mu, Lambda, size_gen, cxpb,
-                                                                           mutpb, pset, creator, stats=mstats,
-                                                                           halloffame=hof, verbose=True, X_train=X_train,
-                                                                           y_train=y_train, X_val=X_val, y_val=y_val,
-                                                                           terminals=terminals, save_gen=save_gen,
-                                                                           save_path=save_path, fit_tol=fit_tol, cx_lim=cx_lim,
-                                                                           cat_number_len=cat_number_len, cat_number_fit=cat_number_fit,
-                                                                           cat_number_height=cat_number_height, fit_scale=fit_scale)
+    pop, log, pop_statistics, ind_lengths = eaMuPlusLambdaTol_pheno_2fit(best_pop, toolbox, Mu, Lambda, size_gen, cxpb,
+                                                                         mutpb, pset, creator, stats=mstats,
+                                                                         halloffame=hof, verbose=True, X_train=X_train,
+                                                                         y_train=y_train, X_val=X_val, y_val=y_val,
+                                                                         terminals=terminals, save_gen=save_gen,
+                                                                         save_path=save_path_iter, fit_tol=fit_tol, cx_lim=cx_lim,
+                                                                         cat_number_len=cat_number_len, cat_number_fit=cat_number_fit,
+                                                                         cat_number_height=cat_number_height, fit_scale=fit_scale)
     ####################################################################################################################
-    pool.close()
-    pool.join()
-    return pop, log, hof, pop_statistics, ind_lengths
+
+    if nbCPU != 1:
+        pool.close()
+        pool.join()
+
+    return pop, log, hof, pop_statistics, ind_lengths, pset

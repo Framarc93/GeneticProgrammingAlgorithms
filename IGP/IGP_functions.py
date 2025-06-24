@@ -738,6 +738,8 @@ def eaMuPlusLambdaTol(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset,
     invalid_ind_orig = [ind for ind in population if not ind.fitness.valid]
     for ind, fit in zip(invalid_ind_orig, fitnesses):
         ind.fitness.values = fit[:2]
+        if len(fit) > 2:
+            ind.fitness_validation.values = fit[2:]
 
     # compute statistics on population
     all_lengths = []
@@ -802,6 +804,8 @@ def eaMuPlusLambdaTol(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset,
         # assign fitness to evaluated individuals
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit[:2]
+            if len(fit) > 2:
+                ind.fitness_validation.values = fit[2:]
 
         # Update the hall of fame with the generated individuals
         if halloffame is not None:
@@ -811,7 +815,7 @@ def eaMuPlusLambdaTol(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset,
         global_pop = population + offspring
         # retrieve best individuals
         best_ind = selBest(global_pop, 1)
-        # remove best individual from total popluation. This will be passed anyway to the next generation
+        # remove best individual from total population. This will be passed anyway to the next generation
         pop_without_best = [ind for ind in global_pop if ind != best_ind[0]]
 
         # Create niches on total population
@@ -861,6 +865,7 @@ def eaMuPlusLambdaTol(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset,
         gen += 1
 
     return population, logbook, data, all_lengths, halloffame
+
 
 
 ########################### GENETIC OPERATORS FOR MULTIPLE TREE OUTPUT   #####################################

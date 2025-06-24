@@ -1,7 +1,7 @@
 from deap import gp
 import numpy as np
 
-def evaluate_IGP(individual, pset, **kwargs):
+def evaluate_IGP_FIGP(individual, pset, **kwargs):
     X_train = kwargs['kwargs']['X_train']
     y_train = kwargs['kwargs']['y_train']
     X_val = kwargs['kwargs']['X_val']
@@ -17,3 +17,4 @@ def evaluate_IGP(individual, pset, **kwargs):
     fitness_train = np.sqrt(sum(err_train**2)/(len(err_train)))
     fitness_val = np.sqrt(sum(err_val ** 2) / (len(err_val)))
     return fitness_train, 0.0, fitness_val, 0.0
+

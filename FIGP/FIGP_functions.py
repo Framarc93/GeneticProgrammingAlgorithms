@@ -42,13 +42,46 @@ import matplotlib.pyplot as plt
 from deap import tools, gp
 from functools import partial
 import dill
-from IGP.IGP_functions import subset_feasible
+from IGP.IGP_functions import subset_feasible, selDoubleTournament_IGP
 import random
+from deap.tools import selBest
 
 #######################################################################################################################
 """                                         NEW FUNCTIONS AND CLASSES                                               """
 #######################################################################################################################
 
+##################### Selection mechanisms
+def InclusiveTournament3D(mu, organized_pop, good_indexes, selected_individuals, fitness_size, parsimony_size, creator):
+    """
+    Author(s): Francesco Marchetti
+    email: framarc93@gmail.com
+
+    This function is a modification of the Inclusive Tournament. It consists in applying the inclusive tournament
+    on a 3D niches space.
+    """
+
+    chosen = []
+    exploited = np.zeros((len(good_indexes)))
+    j = 0
+    count = 0
+    while len(chosen) < mu:
+        if j > len(good_indexes) - 1:
+            j = 0
+        i = good_indexes[j]
+
+        if exploited[j] < len(organized_pop["cat{}_{}_{}".format(i[0], i[1], i[2])]):
+            if len(organized_pop["cat{}_{}_{}".format(i[0], i[1], i[2])]) > 1:
+                selected = selDoubleTournament_IGP(organized_pop["cat{}_{}_{}".format(i[0], i[1], i[2])], selected_individuals, fitness_size,
+                                               parsimony_size, creator, fitness_first=True)
+                chosen.append(selected)
+            else:
+                chosen.append(organized_pop["cat{}_{}_{}".format(i[0], i[1], i[2])][0])
+            exploited[j] += 1
+        j += 1
+        #if count > 1e3:
+        #    print('stuck infinte loop selection')
+        count+=1
+    return chosen
 
 ##################### Population class
 class POP_pheno_3D_2fit(object):
@@ -336,7 +369,7 @@ def eaMuPlusLambdaTol_pheno_2fit(population, toolbox, mu, lambda_, ngen, cxpb, m
     # compute statistics on population
     all_lengths = []
     data = np.array((['Min length', 'Max length', 'Entropy', 'Distribution']), dtype=object)
-    pop = POP_pheno3D_2fit(population, creator, cat_number_len, cat_number_fit, cat_number_height, fit_scale)
+    pop = POP_pheno_3D_2fit(population, creator, cat_number_len, cat_number_fit, cat_number_height, fit_scale)
     data, all_lengths = pop.retrieve_stats(data, all_lengths)
 
     # update hall of fame
@@ -398,14 +431,14 @@ def eaMuPlusLambdaTol_pheno_2fit(population, toolbox, mu, lambda_, ngen, cxpb, m
 
         # select new population from parents and offspring
         global_pop = population + offspring
-        best_ind = selBest_simple(global_pop, 1)
+        best_ind = selBest(global_pop, 1)
         pop_without_best = [ind for ind in global_pop if ind != best_ind[0]]
 
         # compute statistics on population
         organized_pop, good_indexes = subset_diversity_pheno3D_2fit(pop_without_best, creator, cat_number_len, cat_number_fit, cat_number_height, fit_scale)
         population = copy(toolbox.select(mu-1, organized_pop, good_indexes))
         population = population + best_ind
-        pop = POP_pheno3D_2fit(population, creator, cat_number_len, cat_number_fit, cat_number_height, fit_scale)
+        pop = POP_pheno_3D_2fit(population, creator, cat_number_len, cat_number_fit, cat_number_height, fit_scale)
         data, all_lengths = pop.retrieve_stats(data, all_lengths)
 
         # Update the statistics with the new population
