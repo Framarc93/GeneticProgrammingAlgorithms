@@ -26,15 +26,22 @@ import multiprocess
 from functools import partial
 from deap import gp
 from copy import copy
-from FIGP.FIGP_functions import POP_pheno_3D_2fit
+from src.pop_classes import POP_pheno_3D_2fit
 import numpy as np
-from IGP.IGP_functions import HallOfFame_modified, Min
+from src.utils import HallOfFame_modified, Min
 from deap import tools
-from FIGP.FIGP_functions import eaMuPlusLambdaTol_pheno_2fit
+from src.evolutionary_strategies import eaMuPlusLambdaTol_pheno_2fit
 
-def main_FIGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, terminals, X_train, y_train, X_val, y_val,
-                         save_gen, fit_tol, cx_lim, cat_number_fit, cat_number_height, cat_number_len, fit_scale,
-                         save_path_iter, save_pop, pset, creator, toolbox):
+def main_FIGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_train, y_train, X_val, y_val,pset,
+                        creator, toolbox, save_path_iter, save_pop, save_gen, **kwargs):
+
+    cat_number_len = kwargs['kwargs']['cat_number_len']
+    cat_number_fit = kwargs['kwargs']['cat_number_fit']
+    cat_number_height = kwargs['kwargs']['cat_number_height']
+    fit_scale = kwargs['kwargs']['fit_scale']
+    terminals = kwargs['kwargs']['terminals']
+    fit_tol = kwargs['kwargs']['fit_tol']
+    cx_lim = kwargs['kwargs']['cx_lim']
 
     if nbCPU == 1:
         toolbox.register('map', map)
@@ -86,9 +93,11 @@ def main_FIGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, ter
                                                                          halloffame=hof, verbose=True, X_train=X_train,
                                                                          y_train=y_train, X_val=X_val, y_val=y_val,
                                                                          terminals=terminals, save_gen=save_gen,
-                                                                         save_path=save_path_iter, fit_tol=fit_tol, cx_lim=cx_lim,
-                                                                         cat_number_len=cat_number_len, cat_number_fit=cat_number_fit,
-                                                                         cat_number_height=cat_number_height, fit_scale=fit_scale)
+                                                                         save_path=save_path_iter, fit_tol=fit_tol,
+                                                                         cx_lim=cx_lim, cat_number_len=cat_number_len,
+                                                                         cat_number_fit=cat_number_fit,
+                                                                         cat_number_height=cat_number_height,
+                                                                         fit_scale=fit_scale, save_pop=save_pop)
     ####################################################################################################################
 
     if nbCPU != 1:

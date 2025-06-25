@@ -39,10 +39,9 @@ from time import time
 from deap import gp
 from copy import copy
 import matplotlib.pyplot as plt
-from IGP.IGP_model_definition_functions import define_IGP_model
-from FIGP.FIGP_model_definition_functions import define_FIGP_model
-from MGGP.MGGP_model_defintion_functions import define_MGGP_model
-from MGGP.MGGP_functions import build_funcString
+from src.gp_model_definition_functions import define_IGP_model, define_FIGP_model, define_MGGP_model
+from src.MGGP_utils import build_funcString
+from evaluate_functions import evaluate_MGGP, evaluate_IGP_FIGP
 
 #################################################################################################################
 
@@ -55,14 +54,17 @@ bench = "503_wind"    # select the benchmark
 
 match algo:
     case "IGP":
-        evaluation_function = main_IGP_regression
+        main_function = main_IGP_regression
         define_GP_model = define_IGP_model
+        evaluation_function = evaluate_IGP_FIGP
     case "FIGP":
-        evaluation_function = main_FIGP_regression
+        main_function = main_FIGP_regression
         define_GP_model = define_FIGP_model
+        evaluation_function = evaluate_IGP_FIGP
     case "MGGP":
-        evaluation_function = main_MGGP_regression
+        main_function = main_MGGP_regression
         define_GP_model = define_MGGP_model
+        evaluation_function = evaluate_MGGP
     case _:
         print("Select a GP algorithm between IGP, FIGP and MGGP.")
 
@@ -112,7 +114,7 @@ terminals, X_train, y_train, X_val, y_val, X_test, y_test = select_testcase(benc
 
 for n in range(ntot):
 
-    pset, creator, toolbox = define_GP_model(terminals, nEph, Eph_max, limit_height, limit_size, n,
+    pset, creator, toolbox = define_GP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, evaluation_function,
                                              kwargs={'NgenesMax': NgenesMax, 'stdCxpb': stdCxpb})
 
     if __name__ == "__main__":
@@ -126,14 +128,18 @@ for n in range(ntot):
 
         start = time()
 
-        pop, log, hof, pop_statistics, ind_lengths, pset = evaluation_function(size_pop, size_gen, Mu, Lambda, cxpb,
-                                                                               mutpb, nbCPU, terminals, X_train,
-                                                                               y_train, X_val, y_val, save_gen,
-                                                                               fit_tol, cx_lim, cat_number_fit,
-                                                                               cat_number_height, cat_number_len,
-                                                                               fit_scale, save_path_iter, save_pop,
-                                                                               pset, creator, toolbox, NgenesMax,
-                                                                               stdCxpb)
+        pop, log, hof, pop_statistics, ind_lengths, pset = main_function(size_pop, size_gen, Mu, Lambda, cxpb, mutpb,
+                                                                         nbCPU, X_train, y_train, X_val, y_val,pset,
+                                                                         creator, toolbox, save_path_iter, save_pop,
+                                                                         save_gen, kwargs={'fit_tol': fit_tol,
+                                                                                           'terminals': terminals,
+                                                                                           'cx_lim': cx_lim,
+                                                                                           'cat_number_len': cat_number_len,
+                                                                                           'cat_number_fit': cat_number_fit,
+                                                                                           'cat_number_height': cat_number_height,
+                                                                                           'fit_scale': fit_scale})
+
+
         end = time()
 
         t_offdesign = end - start

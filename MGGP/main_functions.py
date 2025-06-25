@@ -30,18 +30,23 @@ Script containing the main functions for the regression and control applications
 import multiprocess
 import numpy as np
 from functools import partial
-from MGGP.MGGP_functions import lst_matrix, varOr, evaluate_subtree
+from src.MGGP_utils import lst_matrix, evaluate_subtree
+from src.recombination_functions import varOr
 from copy import deepcopy
-from IGP.IGP_functions import POP_geno
+from src.pop_classes import POP_geno
 from deap.tools import selBest
 from examples.regression.evaluate_functions import evaluate_MGGP
 import dill
 from deap import tools
-from IGP.IGP_functions import Min
+from src.utils import Min
 
-def main_MGGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, terminals, X_train, y_train, X_val, y_val,
-                         save_gen, fit_tol, cx_lim, cat_number_fit, cat_number_height, cat_number_len, fit_scale,
-                         save_path_iter, save_pop, pset, creator, toolbox, NgenesMax, stdCxpb):
+def main_MGGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_train, y_train, X_val, y_val, pset,
+                         creator, toolbox, save_path_iter, save_pop,  save_gen, **kwargs):
+                         #terminals,
+                         # fit_tol, cx_lim, cat_number_fit, cat_number_height, cat_number_len, fit_scale,
+                         # NgenesMax, stdCxpb):
+
+
 
     stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
     stats_fit_val = tools.Statistics(lambda ind: ind.fitness_validation.values)

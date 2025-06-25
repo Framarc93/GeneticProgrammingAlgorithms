@@ -11,8 +11,8 @@
  cat_number_height: 6
  fit_scale: 0.5
  fit_tol: 0.0000000001
- save_gen: 1
- save_pop: 1
+ save_gen: True
+ save_pop: True
  mutpb: 0.25
  cxpb: 0.75
  cx_lim: 0.75

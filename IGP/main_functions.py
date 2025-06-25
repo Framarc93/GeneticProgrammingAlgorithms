@@ -29,16 +29,18 @@ Script containing the main functions for the regression and control applications
 
 import multiprocess
 import numpy as np
-
-from IGP.IGP_functions import POP_geno, HallOfFame_modified, Min, eaMuPlusLambdaTol
+from src.pop_classes import POP_geno
+from src.utils import HallOfFame_modified, Min
+from src.evolutionary_strategies import eaMuPlusLambdaTol
 from deap import tools
 
 
-def main_IGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, terminals, X_train, y_train, X_val, y_val,
-                        save_gen, fit_tol, cx_lim, cat_number_fit, cat_number_height, cat_number_len, fit_scale,
-                        save_path, save_pop, pset, creator, toolbox):
+def main_IGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_train, y_train, X_val, y_val,pset,
+                        creator, toolbox, save_path_iter, save_pop, save_gen, **kwargs):
 
-
+    fit_tol = kwargs['kwargs']['fit_tol']
+    terminals = kwargs['kwargs']['terminals']
+    cx_lim = kwargs['kwargs']['cx_lim']
 
     if nbCPU == 1:
         toolbox.register('map', map)
@@ -68,17 +70,13 @@ def main_IGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, term
 
     ####################################   EVOLUTIONARY ALGORITHM   -  EXECUTION   ###################################
 
-    pop, log, pop_statistics, ind_lengths, hof = eaMuPlusLambdaTol(best_pop, toolbox, Mu, Lambda, size_gen, cxpb,
-                                                                            mutpb, pset, creator, stats=mstats,
-                                                                            X_train=X_train, y_train=y_train,
-                                                                            X_val=X_val, y_val=y_val, save_gen=save_gen,
-                                                                            fit_tol=fit_tol, terminals=terminals,
-                                                                            halloffame=hof, cx_lim=cx_lim, verbose=True,
-                                                                            cat_number_height=cat_number_height,
-                                                                            cat_number_len=cat_number_len,
-                                                                            cat_number_fit=cat_number_fit,
-                                                                            fit_scale=fit_scale, save_path=save_path,
-                                                                            save_pop=save_pop)
+    pop, log, pop_statistics, ind_lengths, hof = eaMuPlusLambdaTol(best_pop, toolbox, Mu, Lambda, size_gen, cxpb, mutpb,
+                                                                   pset, creator, stats=mstats, X_train=X_train,
+                                                                   y_train=y_train, X_val=X_val, y_val=y_val,
+                                                                   save_gen=save_gen, fit_tol=fit_tol,
+                                                                   terminals=terminals, halloffame=hof, cx_lim=cx_lim,
+                                                                   verbose=True, save_path=save_path_iter,
+                                                                   save_pop=save_pop)
 
     ####################################################################################################################
     if nbCPU != 1:

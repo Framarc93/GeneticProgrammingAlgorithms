@@ -1,6 +1,6 @@
 from deap import gp
 import numpy as np
-from MGGP.MGGP_functions import build_funcString
+from src.MGGP_utils import build_funcString
 
 def evaluate_IGP_FIGP(individual, pset, **kwargs):
     X_train = kwargs['kwargs']['X_train']
