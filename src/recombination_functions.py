@@ -135,7 +135,7 @@ def varOr_IGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb
     return offspring, len_subpop, mutpb, cxpb
 
 
-def varOr_FIGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb, mutpb, verbose, cx_lim, select_best):
+def varOr_FIGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb, mutpb, verbose, cx_lim):
     """
     Function to perform crossover,mutation or reproduction operations. This is a modified version of the varOr function from DEAP
     library (https://github.com/DEAP/deap/blob/master/deap/algorithms.py#L192C1-L192C54).

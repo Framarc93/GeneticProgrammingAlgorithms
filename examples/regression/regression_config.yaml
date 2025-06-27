@@ -28,3 +28,4 @@
  save_path: "results/"
  NgenesMax: 7
  stdCxpb: 0.7
+ init_repeat: 100

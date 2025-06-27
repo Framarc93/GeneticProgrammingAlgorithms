@@ -37,7 +37,7 @@ def subset_feasible(population):
     return sub_pop
 
 
-def subset_diversity_genotype(population, creator):
+def subset_diversity_genotype(population, creator, **kwargs):
     """
     Author(s): Francesco Marchetti
     email: framarc93@gmail.com
@@ -90,7 +90,7 @@ def subset_diversity_genotype(population, creator):
     return categories, np.asarray(useful_ind, dtype=int)
 
 
-def subset_diversity_pheno3D_2fit(population, creator, cat_number_len, cat_number_fit, cat_number_height, fit_scale):
+def subset_diversity_pheno3D_2fit(population, creator, **kwargs):
     """
     Author(s): Francesco Marchetti
     email: framarc93@gmail.com
@@ -99,6 +99,11 @@ def subset_diversity_pheno3D_2fit(population, creator, cat_number_len, cat_numbe
     categories is done according to the training fitness, validation fitness and length of the individuals
     in the population
     """
+
+    cat_number_len = kwargs['kwargs']["cat_number_len"]
+    cat_number_fit = kwargs['kwargs']["cat_number_fit"]
+    cat_number_height = kwargs['kwargs']["cat_number_height"]
+    fit_scale = kwargs['kwargs']["fit_scale"]
 
     fits = []
     categories = {}

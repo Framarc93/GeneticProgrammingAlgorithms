@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-# ------ Copyright (C) 2025 Francesco Marchetti -----------------------
+# ------ Copyright (C) 2020 University of Strathclyde and Author ------
 # ---------------- Author: Francesco Marchetti ------------------------
 # ---------------- e-mail: framarc93@gmail.com ------------------------
 
@@ -22,14 +22,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-
-"""
-Script containing the main functions for the regression and control applications of the MGGP algorithm.
-"""
-
 import multiprocess
-import numpy as np
 from functools import partial
+from deap import gp, tools
+from copy import copy
+from src.pop_classes import POP_pheno_3D_2fit, POP_geno
+import numpy as np
+from src.utils import HallOfFame_modified, Min
+from src.evolutionary_strategies import FullInclusiveMuPlusLambda, InclusiveMuPlusLambda
 from src.MGGP_utils import lst_matrix, evaluate_subtree
 from src.recombination_functions import varOr
 from copy import deepcopy
@@ -37,14 +37,102 @@ from src.pop_classes import POP_geno
 from deap.tools import selBest
 from examples.regression.evaluate_functions import evaluate_MGGP
 import dill
-from deap import tools
-from src.utils import Min
+
+
+def main_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_train, y_train, X_val, y_val,pset,
+                        creator, toolbox, save_path_iter, save_pop, save_gen, **kwargs):
+
+    kwargs = kwargs['kwargs']
+    kwargs['X_train'] = X_train
+    kwargs['y_train'] = y_train
+    kwargs['X_val'] = X_val
+    kwargs['y_val'] = y_val
+    kwargs['save_path'] = save_path_iter
+
+    init_repeat = kwargs['init_repeat']
+
+    if nbCPU == 1:
+        toolbox.register('map', map)
+    else:
+        pool = multiprocess.Pool(nbCPU)
+        toolbox.register('map', pool.map)
+
+    best_pop = toolbox.pop_init(size_pop, toolbox, creator, init_repeat, kwargs=kwargs)
+
+    hof = HallOfFame_modified(10)
+
+    print("INITIAL POP SIZE: %d" % size_pop)
+    print("GEN SIZE: %d" % size_gen)
+    print("\n")
+
+    stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
+    stats_fit_val = tools.Statistics(lambda ind: ind.fitness_validation.values)
+    mstats = tools.MultiStatistics(fitness=stats_fit, fitness_val=stats_fit_val)
+
+    mstats.register("avg", np.mean, axis=0)
+    mstats.register("min", Min)
+
+    ####################################   EVOLUTIONARY ALGORITHM   -  EXECUTION   ###################################
+
+    pop, log, pop_statistics, ind_lengths, hof = InclusiveMuPlusLambda(best_pop, toolbox, Mu, Lambda, size_gen, cxpb, mutpb,
+                                                                   pset, creator, stats=mstats, halloffame=hof,
+                                                                       verbose=True, kwargs=kwargs)
+
+    ####################################################################################################################
+    if nbCPU != 1:
+        pool.close()
+        pool.join()
+    return pop, log, hof, pop_statistics, ind_lengths, pset
+
+def main_FIGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_train, y_train, X_val, y_val,pset,
+                        creator, toolbox, save_path_iter, save_pop, save_gen, **kwargs):
+
+    cat_number_len = kwargs['kwargs']['cat_number_len']
+    cat_number_fit = kwargs['kwargs']['cat_number_fit']
+    cat_number_height = kwargs['kwargs']['cat_number_height']
+    fit_scale = kwargs['kwargs']['fit_scale']
+    terminals = kwargs['kwargs']['terminals']
+    fit_tol = kwargs['kwargs']['fit_tol']
+    cx_lim = kwargs['kwargs']['cx_lim']
+    init_repeat = kwargs['kwargs']['init_repeat']
+
+    if nbCPU == 1:
+        toolbox.register('map', map)
+    else:
+        pool = multiprocess.Pool(nbCPU)
+        toolbox.register("map", pool.map)
+
+    best_pop = toolbox.pop_init(size_pop, toolbox, creator, init_repeat, kwargs=kwargs)
+
+    hof = HallOfFame_modified(10)
+
+    print("INITIAL POP SIZE: %d" % size_pop)
+    print("GEN SIZE: %d" % size_gen)
+    print("\n")
+
+    stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
+    stats_fit_val = tools.Statistics(lambda ind: ind.fitness_validation.values)
+    mstats = tools.MultiStatistics(fitness=stats_fit, fitness_val=stats_fit_val)
+
+    mstats.register("avg", np.mean, axis=0)
+    mstats.register("min", Min)
+
+    ####################################   EVOLUTIONARY ALGORITHM   -  EXECUTION   ###################################
+
+    pop, log, pop_statistics, ind_lengths, hof = InclusiveMuPlusLambda(best_pop, toolbox, Mu, Lambda, size_gen, cxpb,
+                                                                       mutpb, pset, creator, stats=mstats,
+                                                                       halloffame=hof, verbose=True, kwargs=kwargs)
+    ####################################################################################################################
+
+    if nbCPU != 1:
+        pool.close()
+        pool.join()
+
+    return pop, log, hof, pop_statistics, ind_lengths, pset
+
 
 def main_MGGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_train, y_train, X_val, y_val, pset,
                          creator, toolbox, save_path_iter, save_pop,  save_gen, **kwargs):
-                         #terminals,
-                         # fit_tol, cx_lim, cat_number_fit, cat_number_height, cat_number_len, fit_scale,
-                         # NgenesMax, stdCxpb):
 
 
 
@@ -156,4 +244,3 @@ def main_MGGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_t
         pool.close()
         pool.join()
     return pop, logbook, [0, best_ind_allTime], data, all_lengths, pset
-

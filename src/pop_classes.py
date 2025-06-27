@@ -27,6 +27,7 @@ from copy import deepcopy, copy
 import matplotlib.pyplot as plt
 from src.niches_manipulation import subset_diversity_genotype, subset_diversity_pheno3D_2fit
 
+
 class POP_geno(object):
     '''
     Author(s): Francesco Marchetti
@@ -57,7 +58,7 @@ class POP_geno(object):
             print the statistics of the considered population
     '''
 
-    def __init__(self, population, creator):
+    def __init__(self, population, creator, **kwargs):
         self.items = list()
         self.lens = np.zeros(len(population))
         self.fits = np.zeros(len(population))
@@ -142,7 +143,11 @@ class POP_pheno_3D_2fit(object):
             print the statistics of the considered population
     '''
 
-    def __init__(self, population, creator, cat_number_len, cat_number_fit, cat_number_height, fit_scale):
+    def __init__(self, population, creator, **kwargs):
+
+        if "kwargs" in kwargs.keys():
+            kwargs = kwargs["kwargs"]
+
         self.items = list()
         self.lens = np.zeros(len(population))
         self.fits = np.zeros(len(population))
@@ -163,7 +168,11 @@ class POP_pheno_3D_2fit(object):
         self.min_fit_val = min(self.fits_val)
         self.max_fit_val = max(self.fits_val)
 
-        self.categories, self.indexes = subset_diversity_pheno3D_2fit(population, creator, cat_number_len, cat_number_fit, cat_number_height, fit_scale)
+        self.categories, self.indexes = subset_diversity_pheno3D_2fit(population, creator, kwargs=kwargs)
+                                                                      #cat_number_len=kwargs["cat_number_len"],
+                                                                      #cat_number_fit=kwargs["cat_number_fit"],
+                                                                      #cat_number_height=kwargs["cat_number_height"],
+                                                                      #fit_scale=kwargs["fit_scale"])
         pp_fit = self.categories["distribution"]["percentage"]
         pp_fit = pp_fit[pp_fit != 0]
         self.entropy = -sum(pp_fit * np.log(pp_fit))

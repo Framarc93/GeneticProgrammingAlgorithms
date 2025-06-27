@@ -26,9 +26,7 @@
 This script is the main for the regression application. The user must select the algorithm and the benchmark
 """
 
-from IGP.main_functions import main_IGP_regression
-from FIGP.main_functions import main_FIGP_regression
-from MGGP.main_functions import main_MGGP_regression
+from src.main_functions import main_regression, main_MGGP_regression
 from data.data_handling import retrieve_dataset
 import yaml
 from yaml.loader import SafeLoader
@@ -54,11 +52,11 @@ bench = "503_wind"    # select the benchmark
 
 match algo:
     case "IGP":
-        main_function = main_IGP_regression
+        main_function = main_regression
         define_GP_model = define_IGP_model
         evaluation_function = evaluate_IGP_FIGP
     case "FIGP":
-        main_function = main_FIGP_regression
+        main_function = main_regression
         define_GP_model = define_FIGP_model
         evaluation_function = evaluate_IGP_FIGP
     case "MGGP":
@@ -96,6 +94,7 @@ val_perc = configs['val_perc']
 NgenesMax = configs['NgenesMax']
 stdCxpb = configs['stdCxpb']
 
+
 Mu = int(size_pop)
 Lambda = int(size_pop * 1.2)
 nbCPU = 1#multiprocess.cpu_count() # threads to use
@@ -131,13 +130,7 @@ for n in range(ntot):
         pop, log, hof, pop_statistics, ind_lengths, pset = main_function(size_pop, size_gen, Mu, Lambda, cxpb, mutpb,
                                                                          nbCPU, X_train, y_train, X_val, y_val,pset,
                                                                          creator, toolbox, save_path_iter, save_pop,
-                                                                         save_gen, kwargs={'fit_tol': fit_tol,
-                                                                                           'terminals': terminals,
-                                                                                           'cx_lim': cx_lim,
-                                                                                           'cat_number_len': cat_number_len,
-                                                                                           'cat_number_fit': cat_number_fit,
-                                                                                           'cat_number_height': cat_number_height,
-                                                                                           'fit_scale': fit_scale})
+                                                                         save_gen, kwargs=configs)
 
 
         end = time()

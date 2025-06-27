@@ -33,9 +33,14 @@ from src.mutation_functions import xmutMultiple, xmut_MGGP
 from src.utils import initRepeatRandom
 from src.crossover_functions import xmate_MGGP
 from src.bloat_control import staticLimit_mutShrink
+from src.niches_manipulation import subset_diversity_genotype, subset_diversity_pheno3D_2fit
+from src.recombination_functions import varOr_IGP, varOr_FIGP
+from src.pop_classes import POP_geno, POP_pheno_3D_2fit
+from src.pop_init import pop_init_geno, pop_init_pheno_geno
 
 def ephemeral_creation(Eph_max):
     return round(random.uniform(-Eph_max, Eph_max), 4)
+
 
 def define_IGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, evaluate_function, **kwargs):
     ####################################    P R I M I T I V E  -  S E T     ############################################
@@ -72,6 +77,10 @@ def define_IGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, eval
     toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=1, max_=4)
     toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+    toolbox.register("niches_generation", subset_diversity_genotype)
+    toolbox.register("varOr", varOr_IGP)
+    toolbox.register("POP_class", POP_geno)
+    toolbox.register("pop_init", pop_init_geno)
     toolbox.register("compile", gp.compile, pset=pset)
     toolbox.register("evaluate", evaluate_function)
     toolbox.register("select", InclusiveTournament, selected_individuals=1, fitness_size=2, parsimony_size=1.6,
@@ -86,6 +95,7 @@ def define_IGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, eval
     toolbox.decorate("mutate", gp.staticLimit(key=len, max_value=limit_size))
 
     return pset, creator, toolbox
+
 
 def define_FIGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, evaluate_function, **kwargs):
     ####################################    P R I M I T I V E  -  S E T     ################################################
@@ -122,6 +132,10 @@ def define_FIGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, eva
     toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=1, max_=4)
     toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+    toolbox.register("niches_generation", subset_diversity_pheno3D_2fit)
+    toolbox.register("varOr", varOr_FIGP)
+    toolbox.register("POP_class", POP_pheno_3D_2fit)
+    toolbox.register("pop_init", pop_init_pheno_geno)
     toolbox.register("compile", gp.compile, pset=pset)
     toolbox.register("evaluate", evaluate_function)
     toolbox.register("select", InclusiveTournament3D, selected_individuals=1, fitness_size=2, parsimony_size=1.6, creator=creator)

@@ -32,21 +32,24 @@ from src.niches_manipulation import subset_diversity_genotype, subset_diversity_
 from src.recombination_functions import varOr_IGP, varOr_FIGP
 from src.selection_functions import selBest_IGP
 
-def eaMuPlusLambdaTol(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset, creator,
-                      stats=None, halloffame=None, verbose=__debug__, **kwargs):
+
+def InclusiveMuPlusLambda(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset, creator, stats=None,
+                          halloffame=None, verbose=__debug__, **kwargs):
     """
     Modification of eaMuPlusLambda function from DEAP library, used by IGP. Modifications include:
         - use of tolerance value for the first fitness function below which the evolution is stopped
         - added population class
         - added best individual selection
         - added possibility to save population and best ind at each gen
-        - added subset defintion function
-        - use of modifierd VarOr algorithm
+        - added subset definition function
+        - use of modified VarOr algorithm
         - the best individual is always passed to the new generation
 
     Please refer to the original function in the DEAP library for the full description
     https://github.com/DEAP/deap/blob/master/deap/algorithms.py#L248C1-L248C5.
     """
+
+    kwargs = kwargs['kwargs']
 
     gen = 0  # initialize generation
 
@@ -58,7 +61,7 @@ def eaMuPlusLambdaTol(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset,
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
 
     # perform fitness evaluation with or without multiprocessing
-    fitnesses = toolbox.map(partial(toolbox.evaluate, pset=pset, compile=gp.compile, kwargs=kwargs), invalid_ind)
+    fitnesses = toolbox.map(partial(toolbox.evaluate, compile=toolbox.compile, kwargs=kwargs), invalid_ind)
 
     # assign evaluated fitness to population
     invalid_ind_orig = [ind for ind in population if not ind.fitness.valid]
@@ -70,7 +73,7 @@ def eaMuPlusLambdaTol(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset,
     # compute statistics on population
     all_lengths = []
     data = np.array((['Min length', 'Max length', 'Entropy', 'Distribution']), dtype=object)
-    pop = POP_geno(population, creator)
+    pop = toolbox.POP_class(population, creator, kwargs=kwargs)
     data, all_lengths = pop.retrieve_stats(data, all_lengths)
 
     # update hall of fame
@@ -115,17 +118,17 @@ def eaMuPlusLambdaTol(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset,
     while gen < ngen and not success:
 
         # create niches on population
-        sub_div, good_index = subset_diversity_genotype(population, creator)
+        sub_div, good_index = toolbox.niches_generation(population, creator, kwargs=kwargs)
 
         # Perform crossover, mutation and pass
-        offspring, len_feas, mutpb, cxpb = varOr_IGP(population, toolbox, lambda_, sub_div, good_index, cxpb, mutpb,
+        offspring, len_feas, mutpb, cxpb = toolbox.varOr(population, toolbox, lambda_, sub_div, good_index, cxpb, mutpb,
                                                      verbose, kwargs['cx_lim'])
 
         # Retrieve the individuals with an empty fitness from the offspring
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
         # evaluate fitness
-        fitnesses = toolbox.map(partial(toolbox.evaluate, pset=pset, compile=gp.compile, kwargs=kwargs), invalid_ind)
+        fitnesses = toolbox.map(partial(toolbox.evaluate, compile=toolbox.compile, kwargs=kwargs), invalid_ind)
 
         # assign fitness to evaluated individuals
         for ind, fit in zip(invalid_ind, fitnesses):
@@ -145,7 +148,7 @@ def eaMuPlusLambdaTol(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset,
         pop_without_best = [ind for ind in global_pop if ind != best_ind]
 
         # Create niches on total population
-        organized_pop, good_indexes = subset_diversity_genotype(pop_without_best, creator)
+        organized_pop, good_indexes = toolbox.niches_generation(pop_without_best, creator, kwargs=kwargs)
 
         # perform selection
         population = copy(toolbox.select(mu - 1, organized_pop, good_indexes))
@@ -154,7 +157,7 @@ def eaMuPlusLambdaTol(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset,
         population = population + [best_ind]
 
         # compute statistics on population
-        pop = POP_geno(population, creator)
+        pop = toolbox.POP_class(population, creator, kwargs=kwargs)
         data, all_lengths = pop.retrieve_stats(data, all_lengths)
 
         # Update the statistics with the new population
@@ -193,7 +196,7 @@ def eaMuPlusLambdaTol(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset,
     return population, logbook, data, all_lengths, halloffame
 
 
-def eaMuPlusLambdaTol_pheno_2fit(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset, creator,
+def FullInclusiveMuPlusLambda(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset, creator,
                       stats=None, halloffame=None, verbose=__debug__, **kwargs):
     """
     Modification of eaMuPlusLambda function from DEAP library, used by FIGP. Modifications include:
@@ -225,7 +228,7 @@ def eaMuPlusLambdaTol_pheno_2fit(population, toolbox, mu, lambda_, ngen, cxpb, m
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
 
     # perform fitness evaluation with or without multiprocessing
-    fitnesses = toolbox.map(partial(toolbox.evaluate, pset=pset, compile=gp.compile, kwargs=kwargs), invalid_ind)
+    fitnesses = toolbox.map(partial(toolbox.evaluate, compile=toolbox.compile, kwargs=kwargs), invalid_ind)
 
     # assign evaluated fitness to population
     invalid_ind_orig = [ind for ind in population if not ind.fitness.valid]
