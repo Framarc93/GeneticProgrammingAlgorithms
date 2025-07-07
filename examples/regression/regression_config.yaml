@@ -1,31 +1,37 @@
 ---
- nEph: 1
- Eph_max: 10
- limit_height: 40
- limit_size: 40  
- size_pop: 3
- size_gen: 3
- size_gen_edda: 500
- cat_number_len: 6
- cat_number_fit: 6
- cat_number_height: 6
- fit_scale: 0.5
- fit_tol: 0.0000000001
- save_gen: True
- save_pop: True
- mutpb: 0.25
- cxpb: 0.75
- cx_lim: 0.75
- ntot: 30
- num_demes: 300
- inds_to_pass: 1
- size_pop_demes: 100
- size_gen_demes: 5
- threshold_features: 50
- threshold_instances: 1000
- test_perc: 0.2
- val_perc: 0.2
- save_path: "results/"
- NgenesMax: 7
- stdCxpb: 0.7
- init_repeat: 100
+# Common parameters
+ nEph: 5                      # number of ephemeral constants
+ Eph_max: 10                  # maximum value of the ephemeral constants
+ limit_height: 40             # limit height (depth) of GP tree
+ limit_size: 40               # limit size (number of nodes) of GP tree
+ size_pop: 300                # number of individuals in the population
+ size_gen: 300                # number of generations
+ mutpb: 0.2                   # mutation probability
+ cxpb: 0.8                    # crossover probability
+ init_repeat: 100             # number of iterations of the population initialization loop
+ cx_lim: 0.75                 # max crossover probability reached when lowering mutation probability and increasing crossover one
+ fit_tol: 0.0000000001        # tolerance on fitness to stop evolutionary process
+ ntot: 30                     # number of evolutionary processes to perform
+
+ # save parameters
+ save_gen: True               # flag to save individuals each generation
+ save_pop: True               # flag to save whole population each generation
+ save_path: "results/"        # path where to save data
+
+ # FIGP parameters
+ cat_number_len: 6            # categories on length dimension
+ cat_number_fit_train: 6      # categories on training fitness dimension
+ cat_number_fit_val: 6        # categories on validation fitness dimension
+ fit_scale: 0.5               # parameter used to scale fitness values in niches creation process
+
+ # MGGP parameters
+ NgenesMax: 7                 # maximum number of genes (subtrees) in a GP individuals
+ stdCxpb: 0.7                 # standard crossover probability
+
+ # dataset parameters
+ test_perc: 0.2               # percentage of test data
+ val_perc: 0.2                # percentage of validation data
+
+
+
+

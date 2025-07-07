@@ -26,7 +26,7 @@
 This script is the main for the regression application. The user must select the algorithm and the benchmark
 """
 
-from src.main_functions import main_regression, main_MGGP_regression
+from src.main_functions import main_regression
 from data.data_handling import retrieve_dataset
 import yaml
 from yaml.loader import SafeLoader
@@ -39,7 +39,9 @@ from copy import copy
 import matplotlib.pyplot as plt
 from src.gp_model_definition_functions import define_IGP_model, define_FIGP_model, define_MGGP_model
 from src.MGGP_utils import build_funcString
-from evaluate_functions import evaluate_MGGP, evaluate_IGP_FIGP
+from src.MGGP_utils import lst_matrix
+from evaluate_functions import evaluate_regression
+import multiprocess
 
 #################################################################################################################
 
@@ -47,22 +49,22 @@ from evaluate_functions import evaluate_MGGP, evaluate_IGP_FIGP
 
 #################################################################################################################
 
-algo  = "MGGP"         # select the GP algorithm. Choose between IGP, FIGP and MGGP
+algo  = "FIGP"         # select the GP algorithm. Choose between IGP, FIGP and MGGP
 bench = "503_wind"    # select the benchmark
 
 match algo:
     case "IGP":
         main_function = main_regression
         define_GP_model = define_IGP_model
-        evaluation_function = evaluate_IGP_FIGP
+        evaluation_function = evaluate_regression
     case "FIGP":
         main_function = main_regression
         define_GP_model = define_FIGP_model
-        evaluation_function = evaluate_IGP_FIGP
+        evaluation_function = evaluate_regression
     case "MGGP":
-        main_function = main_MGGP_regression
+        main_function = main_regression
         define_GP_model = define_MGGP_model
-        evaluation_function = evaluate_MGGP
+        evaluation_function = lst_matrix
     case _:
         print("Select a GP algorithm between IGP, FIGP and MGGP.")
 
@@ -79,8 +81,8 @@ limit_size = configs['limit_size']  # Max size (complexity) of the gp law
 size_pop = configs['size_pop']
 size_gen = configs['size_gen']  # Gen size
 cat_number_len = configs['cat_number_len']
-cat_number_fit = configs['cat_number_fit']
-cat_number_height = configs['cat_number_height']
+cat_number_fit = configs['cat_number_fit_train']
+cat_number_fit_val = configs['cat_number_fit_val']
 fit_scale = configs['fit_scale']
 fit_tol = configs['fit_tol']
 ntot = 1  # configs['ntot']
@@ -94,10 +96,9 @@ val_perc = configs['val_perc']
 NgenesMax = configs['NgenesMax']
 stdCxpb = configs['stdCxpb']
 
-
 Mu = int(size_pop)
 Lambda = int(size_pop * 1.2)
-nbCPU = 1#multiprocess.cpu_count() # threads to use
+nbCPU = multiprocess.cpu_count()  # threads to use
 
 # create save folder
 save_path = configs["save_path"] + '{}_{}/'.format(algo, bench)
@@ -129,8 +130,7 @@ for n in range(ntot):
 
         pop, log, hof, pop_statistics, ind_lengths, pset = main_function(size_pop, size_gen, Mu, Lambda, cxpb, mutpb,
                                                                          nbCPU, X_train, y_train, X_val, y_val,pset,
-                                                                         creator, toolbox, save_path_iter, save_pop,
-                                                                         save_gen, kwargs=configs)
+                                                                         creator, toolbox, save_path_iter, kwargs=configs)
 
 
         end = time()

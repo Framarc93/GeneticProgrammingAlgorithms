@@ -37,6 +37,11 @@ from src.niches_manipulation import subset_diversity_genotype, subset_diversity_
 from src.recombination_functions import varOr_IGP, varOr_FIGP
 from src.pop_classes import POP_geno, POP_pheno_3D_2fit
 from src.pop_init import pop_init_geno, pop_init_pheno_geno
+from src.evolutionary_strategies import InclusiveMuPlusLambda, MuPlusLambdaMGGP
+from examples.regression.evaluate_functions import evaluate_regression
+from src.MGGP_utils import evaluate_subtree
+from src.recombination_functions import varOr
+
 
 def ephemeral_creation(Eph_max):
     return round(random.uniform(-Eph_max, Eph_max), 4)
@@ -78,6 +83,7 @@ def define_IGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, eval
     toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("niches_generation", subset_diversity_genotype)
+    toolbox.register("evol_strategy", InclusiveMuPlusLambda)
     toolbox.register("varOr", varOr_IGP)
     toolbox.register("POP_class", POP_geno)
     toolbox.register("pop_init", pop_init_geno)
@@ -133,6 +139,7 @@ def define_FIGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, eva
     toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("niches_generation", subset_diversity_pheno3D_2fit)
+    toolbox.register("evol_strategy", InclusiveMuPlusLambda)
     toolbox.register("varOr", varOr_FIGP)
     toolbox.register("POP_class", POP_pheno_3D_2fit)
     toolbox.register("pop_init", pop_init_pheno_geno)
@@ -182,7 +189,7 @@ def define_MGGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, eva
     A = []
     wLen = 0  # weighted length
 
-    creator.create("Fitness", base.Fitness, weights=(-1.0,))
+    creator.create("Fitness", base.Fitness, weights=(-1.0, -1.0))
     creator.create("Individual", list, fitness=creator.Fitness, fitness_validation=creator.Fitness, w=d, A=A, wLen=wLen, height=1)
     creator.create("SubIndividual", gp.PrimitiveTree)
 
@@ -194,6 +201,10 @@ def define_MGGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, eva
     toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.legs)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("compile", gp.compile, pset=pset)
+    toolbox.register("evaluate", evaluate_function, evaluate=evaluate_regression, evaluate_subtree=evaluate_subtree)
+    toolbox.register("evol_strategy", MuPlusLambdaMGGP)
+    toolbox.register("POP_class", POP_geno)
+    toolbox.register("varOr", varOr)
     toolbox.register("select", selDoubleTournament_MGGP, fitness_size=2, parsimony_size=1.2, fitness_first=True)
     toolbox.register("mate", xmate_MGGP, NgenesMax=NgenesMax, stdCxpb=stdCxpb)
     toolbox.register("expr_mut", gp.genHalfAndHalf, min_=1, max_=4)

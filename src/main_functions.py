@@ -23,24 +23,13 @@
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
 import multiprocess
-from functools import partial
-from deap import gp, tools
-from copy import copy
-from src.pop_classes import POP_pheno_3D_2fit, POP_geno
+from deap import tools
 import numpy as np
 from src.utils import HallOfFame_modified, Min
-from src.evolutionary_strategies import FullInclusiveMuPlusLambda, InclusiveMuPlusLambda
-from src.MGGP_utils import lst_matrix, evaluate_subtree
-from src.recombination_functions import varOr
-from copy import deepcopy
-from src.pop_classes import POP_geno
-from deap.tools import selBest
-from examples.regression.evaluate_functions import evaluate_MGGP
-import dill
 
 
 def main_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_train, y_train, X_val, y_val,pset,
-                        creator, toolbox, save_path_iter, save_pop, save_gen, **kwargs):
+                        creator, toolbox, save_path_iter, **kwargs):
 
     kwargs = kwargs['kwargs']
     kwargs['X_train'] = X_train
@@ -57,7 +46,10 @@ def main_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_train,
         pool = multiprocess.Pool(nbCPU)
         toolbox.register('map', pool.map)
 
-    best_pop = toolbox.pop_init(size_pop, toolbox, creator, init_repeat, kwargs=kwargs)
+    if hasattr(toolbox, "pop_init"):
+        best_pop = toolbox.pop_init(size_pop, toolbox, creator, init_repeat, kwargs=kwargs)
+    else:
+        best_pop = toolbox.population(size_pop)
 
     hof = HallOfFame_modified(10)
 
@@ -74,7 +66,7 @@ def main_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_train,
 
     ####################################   EVOLUTIONARY ALGORITHM   -  EXECUTION   ###################################
 
-    pop, log, pop_statistics, ind_lengths, hof = InclusiveMuPlusLambda(best_pop, toolbox, Mu, Lambda, size_gen, cxpb, mutpb,
+    pop, log, pop_statistics, ind_lengths, hof = toolbox.evol_strategy(best_pop, toolbox, Mu, Lambda, size_gen, cxpb, mutpb,
                                                                    pset, creator, stats=mstats, halloffame=hof,
                                                                        verbose=True, kwargs=kwargs)
 
@@ -84,163 +76,3 @@ def main_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_train,
         pool.join()
     return pop, log, hof, pop_statistics, ind_lengths, pset
 
-def main_FIGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_train, y_train, X_val, y_val,pset,
-                        creator, toolbox, save_path_iter, save_pop, save_gen, **kwargs):
-
-    cat_number_len = kwargs['kwargs']['cat_number_len']
-    cat_number_fit = kwargs['kwargs']['cat_number_fit']
-    cat_number_height = kwargs['kwargs']['cat_number_height']
-    fit_scale = kwargs['kwargs']['fit_scale']
-    terminals = kwargs['kwargs']['terminals']
-    fit_tol = kwargs['kwargs']['fit_tol']
-    cx_lim = kwargs['kwargs']['cx_lim']
-    init_repeat = kwargs['kwargs']['init_repeat']
-
-    if nbCPU == 1:
-        toolbox.register('map', map)
-    else:
-        pool = multiprocess.Pool(nbCPU)
-        toolbox.register("map", pool.map)
-
-    best_pop = toolbox.pop_init(size_pop, toolbox, creator, init_repeat, kwargs=kwargs)
-
-    hof = HallOfFame_modified(10)
-
-    print("INITIAL POP SIZE: %d" % size_pop)
-    print("GEN SIZE: %d" % size_gen)
-    print("\n")
-
-    stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
-    stats_fit_val = tools.Statistics(lambda ind: ind.fitness_validation.values)
-    mstats = tools.MultiStatistics(fitness=stats_fit, fitness_val=stats_fit_val)
-
-    mstats.register("avg", np.mean, axis=0)
-    mstats.register("min", Min)
-
-    ####################################   EVOLUTIONARY ALGORITHM   -  EXECUTION   ###################################
-
-    pop, log, pop_statistics, ind_lengths, hof = InclusiveMuPlusLambda(best_pop, toolbox, Mu, Lambda, size_gen, cxpb,
-                                                                       mutpb, pset, creator, stats=mstats,
-                                                                       halloffame=hof, verbose=True, kwargs=kwargs)
-    ####################################################################################################################
-
-    if nbCPU != 1:
-        pool.close()
-        pool.join()
-
-    return pop, log, hof, pop_statistics, ind_lengths, pset
-
-
-def main_MGGP_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_train, y_train, X_val, y_val, pset,
-                         creator, toolbox, save_path_iter, save_pop,  save_gen, **kwargs):
-
-
-
-    stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
-    stats_fit_val = tools.Statistics(lambda ind: ind.fitness_validation.values)
-    mstats = tools.MultiStatistics(fitness=stats_fit, fitness_val=stats_fit_val)
-
-    mstats.register("avg", np.mean, axis=0)
-    mstats.register("min", Min)
-
-    if nbCPU == 1:
-        toolbox.register('map', map)
-    else:
-        pool = multiprocess.Pool(nbCPU)
-        toolbox.register("map", pool.map)
-
-    data = np.array(['Min length', 'Max length', 'Entropy', 'Distribution'])
-    all_lengths = []
-    min_fits = []
-
-    pop = toolbox.population(size_pop)  # creation of initial population
-    pop = list(toolbox.map(partial(lst_matrix, evaluate_subtree=evaluate_subtree, output_train=y_train, evaluate=evaluate_MGGP,
-                              compile=toolbox.compile, input_train=X_train, input_val=X_val, output_val=y_val), pop))
-
-    pop_stat = POP_geno(pop, creator)
-    data, all_lengths = pop_stat.retrieve_stats(data, all_lengths)
-
-    gen = 0
-
-    logbook = tools.Logbook()
-    logbook.header = ['gen', 'nevals'] + (mstats.fields if mstats else [])
-
-    record = mstats.compile(pop) if mstats is not None else {}
-    logbook.record(gen=gen, nevals=len(pop), **record)
-    print(logbook.stream)
-
-    best_ind = selBest(pop, 1)[0]
-    best_fit = best_ind.fitness.values[0]
-    best_ind_allTime = deepcopy(best_ind)
-    best_fit_allTime = deepcopy(best_fit)
-    min_fits.append(best_fit_allTime)
-
-    # save data
-    if (save_gen is not None) and (save_gen == True):
-        output = open(save_path_iter + 'Best_ind_{}'.format(gen), "wb")
-        dill.dump(best_ind, output, -1)
-        output.close()
-
-    if (save_pop is not None) and (save_pop == True):
-        output = open(save_path_iter + 'Full_population_{}'.format(gen), "wb")
-        dill.dump(pop, output, -1)
-        output.close()
-
-    gen+=1
-
-    while gen < size_gen and best_fit_allTime > 0:
-
-        #print("------------------------------------------------------------------------------------------------------------- GEN {}".format(gen))
-
-        offspring = varOr(pop, toolbox, Lambda, cxpb, mutpb)
-
-        offspring = list(toolbox.map(partial(lst_matrix, evaluate_subtree=evaluate_subtree, output_train=y_train,
-                                        evaluate=evaluate_MGGP, compile=toolbox.compile, input_train=X_train,
-                                        input_val=X_val, output_val=y_val), offspring))
-
-        global_pop = pop + offspring
-        best_ind = selBest(global_pop, 1)
-        pop_without_best = [ind for ind in global_pop if ind != best_ind]
-
-        # compute statistics on population
-        pop[:] = toolbox.select(pop_without_best, Mu - 1)
-        pop = pop + best_ind
-
-        pop_stat = POP_geno(pop, creator)
-        data, all_lengths = pop_stat.retrieve_stats(data, all_lengths)
-
-        best_fit = best_ind[0].fitness.values[0]
-        if best_fit < best_fit_allTime:
-            best_fit_allTime = deepcopy(best_fit)
-            best_ind_allTime = deepcopy(best_ind[0])
-        min_fits.append(best_fit_allTime)
-        #print("------------------------------------------------------------------------------------------------------------- {}".format(best_fit_allTime))
-        #string = str(best_ind_allTime.w[0])
-        #st = 1
-        #while st <= len(best_ind_allTime):
-        #    string = string + "+" + str(best_ind_allTime.w[st]) + "*" + str(best_ind_allTime[st-1])
-        #    st += 1
-        #print(string)
-
-        # Update the statistics with the new population
-        record = mstats.compile(pop) if mstats is not None else {}
-        logbook.record(gen=gen, nevals=len(pop), **record)
-        print(logbook.stream)
-
-        # save data
-        if (save_gen is not None) and (save_gen == True):
-            output = open(save_path_iter + 'Best_ind_{}'.format(gen), "wb")
-            dill.dump(best_ind[0], output, -1)
-            output.close()
-
-        if (save_pop is not None) and (save_pop == True):
-            output = open(save_path_iter + 'Full_population_{}'.format(gen), "wb")
-            dill.dump(pop, output, -1)
-            output.close()
-
-        gen += 1
-
-    if nbCPU != 1:
-        pool.close()
-        pool.join()
-    return pop, logbook, [0, best_ind_allTime], data, all_lengths, pset

@@ -169,10 +169,6 @@ class POP_pheno_3D_2fit(object):
         self.max_fit_val = max(self.fits_val)
 
         self.categories, self.indexes = subset_diversity_pheno3D_2fit(population, creator, kwargs=kwargs)
-                                                                      #cat_number_len=kwargs["cat_number_len"],
-                                                                      #cat_number_fit=kwargs["cat_number_fit"],
-                                                                      #cat_number_height=kwargs["cat_number_height"],
-                                                                      #fit_scale=kwargs["fit_scale"])
         pp_fit = self.categories["distribution"]["percentage"]
         pp_fit = pp_fit[pp_fit != 0]
         self.entropy = -sum(pp_fit * np.log(pp_fit))

@@ -28,10 +28,13 @@ File containing the functions used by the MGGP algorithm
 """
 
 import numpy as np
-from deap import gp
 
 
-def lst_matrix(ind, evaluate_subtree, evaluate, compile, input_train, output_train, input_val, output_val):
+def lst_matrix(ind, evaluate_subtree, evaluate, compile, **kwargs):
+
+    input_train = kwargs['kwargs']['X_train']
+    output_train = kwargs['kwargs']['y_train']
+
     Y = np.reshape(output_train, (len(output_train), 1))
     A = np.ones((len(output_train), len(ind) + 1))
     for i in range(len(ind)):
@@ -39,20 +42,21 @@ def lst_matrix(ind, evaluate_subtree, evaluate, compile, input_train, output_tra
     try:
         c = np.linalg.pinv(A) @ Y
         if np.isnan(c).any() or np.isinf(c).any():
-            ind.fitness.values = 1e6,
-            ind.fitness_validation.values = 1e6,
-            return ind
+            fitness_train = 1e6
+            fitness_val = 1e6
+            c = np.zeros(len(ind) + 1)
+            return fitness_train, 0.0, fitness_val, 0.0, c
         c = np.ndarray.flatten(c)
         ind.w = c
-        err_train, err_val = evaluate(c, ind, compile, input_train, output_train, input_val, output_val)
-        fit_train = np.sqrt(np.sum(err_train ** 2)/ len(err_train))  # output-output_eval
-        fit_val = np.sqrt(np.sum(err_val ** 2) / len(err_val))  # output-output_eval
-        ind.fitness.values = fit_train,
-        ind.fitness_validation.values = fit_val,
+        eq = build_funcString(c, ind)
+        fitnesses = evaluate(eq, compile, kwargs=kwargs['kwargs'])
+        fitness_train = fitnesses[:2]
+        fitness_val = fitnesses[2:]
     except np.linalg.LinAlgError:
-        ind.fitness.values = 1e6,
-        ind.fitness_validation.values = 1e6,
-    return ind
+        fitness_train = 1e6
+        fitness_val = 1e6
+        c = np.zeros(len(ind)+1)
+    return fitness_train, 0.0, fitness_val, 0.0, c
 
 
 def evaluate_subtree(individual, gene, compile, input_true, output_true):
