@@ -9,7 +9,6 @@ def pop_init_geno(size_pop, toolbox, creator, init_repeat, **kwargs):
 
     for i in range(init_repeat):
         pop = toolbox.POP_class(toolbox.population(n=size_pop), creator)
-        best_pop = pop.items
         if pop.entropy_len > old_entropy and len(pop.indexes_len) == len(pop.categories_len) - 1:
             best_pop = pop.items
             old_entropy = pop.entropy_len
@@ -34,7 +33,6 @@ def pop_init_pheno_geno(size_pop, toolbox, creator, init_repeat, **kwargs):
             ind.fitness_validation.values = fit[2:]
 
         pop_pheno = copy(toolbox.POP_class(pop, creator, kwargs=kwargs['kwargs']))
-        best_pop = pop_pheno.items
         entropy = pop_pheno.entropy
 
         if entropy > old_entropy:
