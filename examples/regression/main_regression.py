@@ -41,6 +41,7 @@ from src.gp_model_definition_functions import define_IGP_model, define_FIGP_mode
 from src.MGGP_utils import build_funcString
 from src.MGGP_utils import lst_matrix
 from evaluate_functions import evaluate_regression
+import multiprocess
 
 #################################################################################################################
 
@@ -94,7 +95,7 @@ stdCxpb = configs['stdCxpb']
 
 Mu = int(size_pop)
 Lambda = int(size_pop * 1.2)
-nbCPU = 1#multiprocess.cpu_count()  # threads to use
+nbCPU = multiprocess.cpu_count()  # threads to use
 
 # create save folder
 save_path = configs["save_path"] + '{}_{}/'.format(algo, bench)
