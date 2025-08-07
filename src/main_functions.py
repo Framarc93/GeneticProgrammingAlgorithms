@@ -28,17 +28,9 @@ import numpy as np
 from src.utils import HallOfFame_modified, Min
 
 
-def main_regression(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, X_train, y_train, X_val, y_val,pset,
-                        creator, toolbox, save_path_iter, **kwargs):
+def main_evolProcess(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, pset,  creator, toolbox, **kwargs):
 
-    kwargs = kwargs['kwargs']
-    kwargs['X_train'] = X_train
-    kwargs['y_train'] = y_train
-    kwargs['X_val'] = X_val
-    kwargs['y_val'] = y_val
-    kwargs['save_path'] = save_path_iter
-
-    init_repeat = kwargs['init_repeat']
+    init_repeat = kwargs['configs']['init_repeat']
 
     if nbCPU == 1:
         toolbox.register('map', map)

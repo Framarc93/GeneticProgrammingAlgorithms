@@ -92,20 +92,20 @@ def InclusiveMuPlusLambda(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, p
             best_ind = copy(population[i])
 
     # save data
-    if (kwargs['save_gen'] is not None) and (kwargs['save_gen'] is True):
-        output = open(kwargs['save_path'] + 'Best_ind_{}'.format(gen), "wb")
+    if (kwargs['configs']['save_gen'] is not None) and (kwargs['configs']['save_gen'] is True):
+        output = open(kwargs['save_path_iter'] + 'Best_ind_{}'.format(gen), "wb")
         dill.dump(best_ind, output, -1)
         output.close()
 
-    if (kwargs['save_pop'] is not None) and (kwargs['save_pop'] is True):
-        output = open(kwargs['save_path'] + 'Full_population_{}'.format(gen), "wb")
+    if (kwargs['configs']['save_pop'] is not None) and (kwargs['configs']['save_pop'] is True):
+        output = open(kwargs['save_path_iter'] + 'Full_population_{}'.format(gen), "wb")
         dill.dump(population, output, -1)
         output.close()
 
     # check stopping criterion
     success = False
-    if kwargs['fit_tol'] is not None:
-        if min_fit <= kwargs['fit_tol']:
+    if kwargs['configs']['fit_tol'] is not None:
+        if min_fit <= kwargs['configs']['fit_tol']:
             success = True
         else:
             success = False
@@ -120,7 +120,7 @@ def InclusiveMuPlusLambda(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, p
 
         # Perform crossover, mutation and pass
         offspring, len_feas, mutpb, cxpb = toolbox.varOr(population, toolbox, lambda_, sub_div, good_index, cxpb, mutpb,
-                                                     verbose, kwargs['cx_lim'])
+                                                     verbose, kwargs['configs']['cx_lim'])
 
         # Retrieve the individuals with an empty fitness from the offspring
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
@@ -172,20 +172,20 @@ def InclusiveMuPlusLambda(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, p
                 best_ind = copy(population[i])
 
         # Check if fitness is below tolerance
-        if kwargs['fit_tol'] is not None:
-            if min_fit <= kwargs['fit_tol']:
+        if kwargs['configs']['fit_tol'] is not None:
+            if min_fit <= kwargs['configs']['fit_tol']:
                 success = True
             else:
                 success = False
 
         # Save data
-        if (kwargs['save_gen'] is not None) and (kwargs['save_gen'] is True):
-            output = open(kwargs['save_path'] + 'Best_ind_{}'.format(gen), "wb")
+        if (kwargs['configs']['save_gen'] is not None) and (kwargs['configs']['save_gen'] is True):
+            output = open(kwargs['save_path_iter'] + 'Best_ind_{}'.format(gen), "wb")
             dill.dump(best_ind, output, -1)
             output.close()
 
-        if (kwargs['save_pop'] is not None) and (kwargs['save_pop'] is True):
-            output = open(kwargs['save_path'] + 'Full_population_{}'.format(gen), "wb")
+        if (kwargs['configs']['save_pop'] is not None) and (kwargs['configs']['save_pop'] is True):
+            output = open(kwargs['save_path_iter'] + 'Full_population_{}'.format(gen), "wb")
             dill.dump(population, output, -1)
             output.close()
 
@@ -256,20 +256,20 @@ def MuPlusLambdaMGGP(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset, 
             best_ind = copy(population[i])
 
     # save data
-    if (kwargs['save_gen'] is not None) and (kwargs['save_gen'] is True):
-        output = open(kwargs['save_path'] + 'Best_ind_{}'.format(gen), "wb")
+    if (kwargs['configs']['save_gen'] is not None) and (kwargs['configs']['save_gen'] is True):
+        output = open(kwargs['save_path_iter'] + 'Best_ind_{}'.format(gen), "wb")
         dill.dump(best_ind, output, -1)
         output.close()
 
-    if (kwargs['save_pop'] is not None) and (kwargs['save_pop'] is True):
-        output = open(kwargs['save_path'] + 'Full_population_{}'.format(gen), "wb")
+    if (kwargs['configs']['save_pop'] is not None) and (kwargs['configs']['save_pop'] is True):
+        output = open(kwargs['save_path_iter'] + 'Full_population_{}'.format(gen), "wb")
         dill.dump(population, output, -1)
         output.close()
 
     # check stopping criterion
     success = False
-    if kwargs['fit_tol'] is not None:
-        if min_fit <= kwargs['fit_tol']:
+    if kwargs['configs']['fit_tol'] is not None:
+        if min_fit <= kwargs['configs']['fit_tol']:
             success = True
         else:
             success = False
@@ -329,20 +329,20 @@ def MuPlusLambdaMGGP(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset, 
                 best_ind = copy(population[i])
 
         # Check if fitness is below tolerance
-        if kwargs['fit_tol'] is not None:
-            if min_fit <= kwargs['fit_tol']:
+        if kwargs['configs']['fit_tol'] is not None:
+            if min_fit <= kwargs['configs']['fit_tol']:
                 success = True
             else:
                 success = False
 
         # Save data
-        if (kwargs['save_gen'] is not None) and (kwargs['save_gen'] is True):
-            output = open(kwargs['save_path'] + 'Best_ind_{}'.format(gen), "wb")
+        if (kwargs['configs']['save_gen'] is not None) and (kwargs['configs']['save_gen'] is True):
+            output = open(kwargs['save_path_iter'] + 'Best_ind_{}'.format(gen), "wb")
             dill.dump(best_ind, output, -1)
             output.close()
 
-        if (kwargs['save_pop'] is not None) and (kwargs['save_pop'] is True):
-            output = open(kwargs['save_path'] + 'Full_population_{}'.format(gen), "wb")
+        if (kwargs['configs']['save_pop'] is not None) and (kwargs['configs']['save_pop'] is True):
+            output = open(kwargs['save_path_iter'] + 'Full_population_{}'.format(gen), "wb")
             dill.dump(population, output, -1)
             output.close()
 

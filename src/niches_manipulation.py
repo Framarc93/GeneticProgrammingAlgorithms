@@ -100,10 +100,10 @@ def subset_diversity_pheno3D_2fit(population, creator, **kwargs):
     in the population
     """
 
-    cat_number_len = kwargs['kwargs']["cat_number_len"]
-    cat_number_fit_train = kwargs['kwargs']["cat_number_fit_train"]
-    cat_number_fit_val = kwargs['kwargs']["cat_number_fit_val"]
-    fit_scale = kwargs['kwargs']["fit_scale"]
+    cat_number_len = kwargs['kwargs']['configs']["cat_number_len"]
+    cat_number_fit_train = kwargs['kwargs']['configs']["cat_number_fit_train"]
+    cat_number_fit_val = kwargs['kwargs']['configs']["cat_number_fit_val"]
+    fit_scale = kwargs['kwargs']['configs']["fit_scale"]
 
     fits = []
     categories = {}

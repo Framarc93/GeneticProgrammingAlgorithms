@@ -4,8 +4,8 @@
  Eph_max: 10                  # maximum value of the ephemeral constants
  limit_height: 40             # limit height (depth) of GP tree
  limit_size: 40               # limit size (number of nodes) of GP tree
- size_pop: 3                # number of individuals in the population
- size_gen: 3               # number of generations
+ size_pop: 300                # number of individuals in the population
+ size_gen: 300                # number of generations
  mutpb: 0.2                   # mutation probability
  cxpb: 0.8                    # crossover probability
  init_repeat: 100             # number of iterations of the population initialization loop
