@@ -1,17 +1,17 @@
-from src.pop_classes import POP_geno
 from functools import partial
 from copy import copy
 
 def pop_init_geno(size_pop, toolbox, creator, init_repeat, **kwargs):
 
-    best_pop = []
-    old_entropy = 0
+    best_pop = toolbox.POP_class(toolbox.population(n=size_pop), creator)
+    old_entropy = best_pop.entropy_len
+    best_pop = best_pop.items
 
     for i in range(init_repeat):
         pop = toolbox.POP_class(toolbox.population(n=size_pop), creator)
         if pop.entropy_len > old_entropy and len(pop.indexes_len) == len(pop.categories_len) - 1:
-            best_pop = pop.items
-            old_entropy = pop.entropy_len
+            best_pop = copy(pop.items)
+            old_entropy = copy(pop.entropy_len)
 
     return best_pop
 
