@@ -4,8 +4,8 @@
  Eph_max: 10                  # maximum value of the ephemeral constants
  limit_height: 40             # limit height (depth) of GP tree
  limit_size: 40               # limit size (number of nodes) of GP tree
- size_pop: 300                # number of individuals in the population
- size_gen: 300                # number of generations
+ size_pop: 3                # number of individuals in the population
+ size_gen: 3                # number of generations
  mutpb: 0.2                   # mutation probability
  cxpb: 0.8                    # crossover probability
  init_repeat: 100             # number of iterations of the population initialization loop
@@ -18,19 +18,7 @@
  save_pop: True               # flag to save whole population each generation
  save_path: "results/"        # path where to save data
 
- # FIGP parameters
- cat_number_len: 6            # categories on length dimension
- cat_number_fit_train: 6      # categories on training fitness dimension
- cat_number_fit_val: 6        # categories on validation fitness dimension
- fit_scale: 0.5               # parameter used to scale fitness values in niches creation process
 
- # MGGP parameters
- NgenesMax: 7                 # maximum number of genes (subtrees) in a GP individuals
- stdCxpb: 0.7                 # standard crossover probability
-
- # dataset parameters
- test_perc: 0.2               # percentage of test data
- val_perc: 0.2                # percentage of validation data
 
 
 

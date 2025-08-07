@@ -49,7 +49,7 @@ import multiprocess
 
 #################################################################################################################
 
-algo  = "MGGP"         # select the GP algorithm. Choose between IGP, FIGP and MGGP
+algo  = "IGP"         # select the GP algorithm. Choose between IGP, FIGP and MGGP
 bench = "503_wind"    # select the benchmark
 
 match algo:
@@ -111,8 +111,8 @@ terminals, X_train, y_train, X_val, y_val, X_test, y_test = select_testcase(benc
 
 for n in range(ntot):
 
-    pset, creator, toolbox = define_GP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, evaluation_function,
-                                             kwargs={'NgenesMax': NgenesMax, 'stdCxpb': stdCxpb})
+    pset, creator, toolbox = define_GP_model(terminals, 1, nEph, Eph_max, limit_height, limit_size, n, evaluation_function,
+                                             fitness_validation=True, kwargs={'NgenesMax': NgenesMax, 'stdCxpb': stdCxpb})
 
     if __name__ == "__main__":
 

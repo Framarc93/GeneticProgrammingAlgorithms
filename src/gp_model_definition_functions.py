@@ -47,7 +47,7 @@ def ephemeral_creation(Eph_max):
     return round(random.uniform(-Eph_max, Eph_max), 4)
 
 
-def define_IGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, evaluate_function, **kwargs):
+def define_IGP_model(terminals, n_subindividuals, nEph, Eph_max, limit_height, limit_size, n, evaluate_function, fitness_validation, **kwargs):
     ####################################    P R I M I T I V E  -  S E T     ############################################
 
     pset = gp.PrimitiveSet("Main", terminals)
@@ -75,12 +75,22 @@ def define_IGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, eval
     ################################################## TOOLBOX #########################################################
 
     creator.create("Fitness", base.Fitness, weights=(-1.0, -1.0))
-    creator.create("Individual", gp.PrimitiveTree, fitness=creator.Fitness, fitness_validation=creator.Fitness)
+    if fitness_validation is True:
+        creator.create("Individual", gp.PrimitiveTree, fitness=creator.Fitness, fitness_validation=creator.Fitness)
+    else:
+        creator.create("Individual", gp.PrimitiveTree, fitness=creator.Fitness)
+    if n_subindividuals > 1:
+        creator.create("SubIndividual", gp.PrimitiveTree)
 
     toolbox = base.Toolbox()
 
     toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=1, max_=4)
-    toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
+    if n_subindividuals > 1:
+        toolbox.register("leg", tools.initIterate, creator.SubIndividual, toolbox.expr)
+        toolbox.register("legs", tools.initCycle, list, [toolbox.leg], n=n_subindividuals)
+        toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.legs)
+    else:
+        toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("niches_generation", subset_diversity_genotype)
     toolbox.register("evol_strategy", InclusiveMuPlusLambda)

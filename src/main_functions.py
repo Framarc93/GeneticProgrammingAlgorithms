@@ -50,8 +50,11 @@ def main_evolProcess(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, pset,  
     print("\n")
 
     stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
-    stats_fit_val = tools.Statistics(lambda ind: ind.fitness_validation.values)
-    mstats = tools.MultiStatistics(fitness=stats_fit, fitness_val=stats_fit_val)
+    if hasattr(toolbox.individual.args[0], "fitness_validation"):
+        stats_fit_val = tools.Statistics(lambda ind: ind.fitness_validation.values)
+        mstats = tools.MultiStatistics(fitness=stats_fit, fitness_val=stats_fit_val)
+    else:
+        mstats = tools.MultiStatistics(fitness=stats_fit)
 
     mstats.register("avg", np.mean, axis=0)
     mstats.register("min", Min)
