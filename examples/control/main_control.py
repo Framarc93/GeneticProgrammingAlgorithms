@@ -40,6 +40,9 @@ import benchmarks.inverted_pendulum.Plant as PlantPendulum
 import multiprocess
 from propagation_functions import propagate_forward
 from benchmarks.inverted_pendulum import dynamics
+from plot_functions import plot
+
+
 #################################################################################################################
 
 # This section must remain outside the if __name__=="__main__" otherwise there are issue with the multiprocessing
@@ -47,7 +50,7 @@ from benchmarks.inverted_pendulum import dynamics
 #################################################################################################################
 
 algo  = "IGP"         # select the GP algorithm. Choose between IGP, FIGP and MGGP
-bench = "pendulum"    # select the benchmark
+bench = "inverted_pendulum"    # select the benchmark
 
 match algo:
     case "IGP":
@@ -61,7 +64,7 @@ match algo:
     case _:
         print("Select a GP algorithm between IGP, FIGP and MGGP.")
 
-if bench == "pendulum":
+if bench == "inverted_pendulum":
     plant = PlantPendulum.Pendulum()
     evaluation_function = evaluate_pendulum
     dynamics = dynamics.dynamics_pendulum
@@ -85,10 +88,10 @@ cx_lim = configs['cx_lim']
 
 Mu = int(size_pop)
 Lambda = int(size_pop * 1.2)
-nbCPU = 1#multiprocess.cpu_count()  # threads to use
+nbCPU = multiprocess.cpu_count()  # threads to use
 
 # create save folder
-save_path = configs["save_path"] + '{}_{}/'.format(algo, bench)
+save_path = configs["save_path"] + '{}/{}/'.format(bench, algo)
 try:
     os.makedirs(save_path)
 except FileExistsError:
@@ -98,7 +101,8 @@ except FileExistsError:
 to_save = np.array(['t_evaluate', 'RMSE_train', 'RMSE_test'])
 
 for n in range(ntot):
-    pset, creator, toolbox = define_GP_model(plant.n_states, plant.n_controls, nEph, Eph_max, limit_height, limit_size, n, evaluation_function, fitness_validation=False)
+    pset, creator, toolbox = define_GP_model(plant.n_states, plant.n_controls, nEph, Eph_max, limit_height, limit_size,
+                                             n, evaluation_function, fitness_validation=False)
 
     if __name__ == "__main__":
 
@@ -121,6 +125,15 @@ for n in range(ntot):
         t_offdesign = end - start
 
         best_ind = hof[-1]
+
+        fitness_best_ind = hof.items[-1].fitness.values[0]
+        np.save(save_path_iter + 'best_fitness.npy', fitness_best_ind)
+
+        fitness_evol = []
+        for i in range(len(log)):
+            fitness_evol.append(log.chapters['fitness'][i]['min'])
+        np.save(save_path_iter + 'fitness_evol.npy', fitness_evol)
+
         best_ind = hof.items[-1]
 
         X, V, Theta, Omega = sympy.symbols('eX eV eTheta eOmega')
@@ -130,14 +143,21 @@ for n in range(ntot):
                                       locals={'add': operator.add, 'sub': operator.sub, 'mul': operator.mul, 'cos': sympy.cos,
                                               'sin': sympy.sin})
 
-        with open(save_path_iter + 'best_ind_structure_IGP.txt', 'w') as f:
+        with open(save_path_iter + 'best_ind_structure.txt', 'w') as f:
             f.write(str(simplified_eq))
 
         t_offdesign = end - start
 
-        np.save(save_path_iter + 'computational_time_IGP.npy', t_offdesign)
+        np.save(save_path_iter + 'computational_time.npy', t_offdesign)
         best_ind = hof[-1]
         x_IGP, u_IGP, failure = propagate_forward(plant, best_ind, toolbox.compile, dynamics)
-        np.save(save_path_iter + 'x_IGP.npy', x_IGP)
-        np.save(save_path_iter + 'u_IGP.npy', u_IGP)
+        np.save(save_path_iter + 'x.npy', x_IGP)
+        np.save(save_path_iter + 'u.npy', u_IGP)
+
+        ref_path = "benchmarks/{}/".format(bench)
+        data_path = "results/{}/{}/Sim{}/".format(bench, algo, n)
+        plot(ref_path, data_path, algo, n, size_gen, plant.n_states)
+
+
+
 
