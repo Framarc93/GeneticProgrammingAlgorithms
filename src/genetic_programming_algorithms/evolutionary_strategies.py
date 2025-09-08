@@ -27,7 +27,7 @@ from functools import partial
 import numpy as np
 from copy import copy
 import dill
-from genetic_programming_algorithms.selection_functions import selBest_IGP
+from .selection_functions import selBest_IGP
 from deap.tools import selBest
 
 
