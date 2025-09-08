@@ -120,7 +120,7 @@ terminals, X_train, y_train, X_val, y_val, X_test, y_test = select_testcase(benc
 for n in range(ntot):
 
     pset, creator, toolbox = define_GP_model(terminals, 1, nEph, Eph_max, limit_height, limit_size, n, evaluation_function,
-                                             fitness_validation=True, kwargs={'NgenesMax': NgenesMax, 'stdCxpb': stdCxpb})
+                                             fitness_validation=True, kwargs={'NgenesMax': NgenesMax, 'stdCxpb': stdCxpb, 'evaluate_regression': evaluate_regression})
 
     if __name__ == "__main__":
 
