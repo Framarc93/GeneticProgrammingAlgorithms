@@ -36,7 +36,8 @@ dependencies = [
     "six (==1.17.0)",
     "threadpoolctl (==3.6.0)",
     "tzdata (==2025.2)",
-    "urllib3 (==2.5.0)"
+    "urllib3 (==2.5.0)",
+    "sympy (==1.14.0)"
 ]
 
 

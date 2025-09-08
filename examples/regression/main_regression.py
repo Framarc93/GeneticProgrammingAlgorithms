@@ -26,22 +26,30 @@
 This script is the main for the regression application. The user must select the algorithm and the benchmark
 """
 
-from src.main_functions import main_evolProcess
+import sys
+import os
+
+# Add the repo root to sys.path
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src")))
+
+from genetic_programming_algorithms.main_functions import main_evolProcess
 from data.data_handling import retrieve_dataset
 import yaml
 from yaml.loader import SafeLoader
-import os
 import numpy as np
 from examples.regression.data.data_handling import select_testcase
 from time import time
 from deap import gp
 from copy import copy
 import matplotlib.pyplot as plt
-from src.gp_model_definition_functions import define_IGP_model, define_FIGP_model, define_MGGP_model
-from src.MGGP_utils import build_funcString
-from src.MGGP_utils import lst_matrix
+from genetic_programming_algorithms.gp_model_definition_functions import define_IGP_model, define_FIGP_model, define_MGGP_model
+from genetic_programming_algorithms.MGGP_utils import build_funcString
+from genetic_programming_algorithms.MGGP_utils import lst_matrix
 from evaluate_functions import evaluate_regression
 import multiprocess
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 #################################################################################################################
 
@@ -68,7 +76,7 @@ match algo:
 
 retrieve_dataset(bench) # download and shuffle dataset
 
-with open('regression_config.yaml') as f:
+with open(BASE_DIR + '/regression_config.yaml') as f:
     configs = yaml.load(f, Loader=SafeLoader) # load configs
 
 nEph = configs['nEph']
@@ -98,7 +106,7 @@ Lambda = int(size_pop * 1.2)
 nbCPU = multiprocess.cpu_count()  # threads to use
 
 # create save folder
-save_path = configs["save_path"] + '{}_{}/'.format(algo, bench)
+save_path = BASE_DIR + '/' + configs["save_path"] + '{}_{}/'.format(algo, bench)
 try:
     os.makedirs(save_path)
 except FileExistsError:

@@ -25,7 +25,7 @@
 import multiprocess
 from deap import tools
 import numpy as np
-from src.utils import HallOfFame_modified, Min
+from genetic_programming_algorithms.utils import HallOfFame_modified, Min
 
 
 def main_evolProcess(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, pset,  creator, toolbox, **kwargs):

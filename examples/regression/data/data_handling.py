@@ -28,10 +28,13 @@ This file contains the function used to retrieve the data for the regression app
 
 
 from pmlb import fetch_data
-import os
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
+import os
+
+# Base folder: where the script lives
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def retrieve_dataset(bench):
     '''
@@ -45,7 +48,7 @@ def retrieve_dataset(bench):
             Name of the dataset to download
     '''
 
-    if os.path.exists("data/{}_shuffled.csv".format(bench)):
+    if os.path.exists(BASE_DIR + "/{}_shuffled.csv".format(bench)):
         # if the file of the shuffled dataset already exist, then do nothing.
         return
     else:
@@ -56,7 +59,7 @@ def retrieve_dataset(bench):
         shuffled = data.sample(frac=1)
 
         # save the dataset to csv
-        shuffled.to_csv('data/{}_shuffled.csv'.format(bench), index=False)
+        shuffled.to_csv(BASE_DIR + '/{}_shuffled.csv'.format(bench), index=False)
         return
 
 
@@ -77,7 +80,7 @@ def select_testcase(bench, test_perc, val_perc):
             percentage of data to use for validation
     '''
 
-    df = pd.read_csv(r'data/{}_shuffled.csv'.format(bench))
+    df = pd.read_csv(BASE_DIR + '/{}_shuffled.csv'.format(bench))
     scaler = MinMaxScaler()
     data = pd.DataFrame(scaler.fit_transform(df), columns=df.columns)
 

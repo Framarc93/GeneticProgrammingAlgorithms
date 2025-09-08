@@ -22,11 +22,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-from src.niches_manipulation import subset_feasible
+from genetic_programming_algorithms.niches_manipulation import subset_feasible
 from copy import copy, deepcopy
 import random
 import numpy as np
-from src.selection_functions import selBest_IGP
+from genetic_programming_algorithms.selection_functions import selBest_IGP
 
 
 def varOr_IGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb, mutpb, verbose, cx_lim):

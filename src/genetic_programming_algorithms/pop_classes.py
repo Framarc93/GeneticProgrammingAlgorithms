@@ -25,7 +25,7 @@
 import numpy as np
 from copy import deepcopy, copy
 import matplotlib.pyplot as plt
-from src.niches_manipulation import subset_diversity_genotype, subset_diversity_pheno3D_2fit
+from genetic_programming_algorithms.niches_manipulation import subset_diversity_genotype, subset_diversity_pheno3D_2fit
 
 
 class POP_geno(object):

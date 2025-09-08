@@ -26,14 +26,21 @@
 This script is the main for the control application. The user must select the algorithm and the test case
 """
 
-from src.main_functions import main_evolProcess
+
+import sys
+import os
+
+# Add the repo root to sys.path
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src")))
+
+from genetic_programming_algorithms.main_functions import main_evolProcess
 import yaml
 from yaml.loader import SafeLoader
-import os
 import numpy as np
 from time import time
 import operator
-from src.gp_model_definition_functions import define_IGP_model
+from genetic_programming_algorithms.gp_model_definition_functions import define_IGP_model
 import sympy
 from benchmarks.inverted_pendulum.evaluate import evaluate_pendulum
 import benchmarks.inverted_pendulum.Plant as PlantPendulum
@@ -42,6 +49,7 @@ from propagation_functions import propagate_forward
 from benchmarks.inverted_pendulum import dynamics
 from plot_functions import plot
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 #################################################################################################################
 
@@ -69,7 +77,7 @@ if bench == "inverted_pendulum":
     evaluation_function = evaluate_pendulum
     dynamics = dynamics.dynamics_pendulum
 
-with open('control_config.yaml') as f:
+with open(BASE_DIR + '/control_config.yaml') as f:
     configs = yaml.load(f, Loader=SafeLoader) # load configs
 
 nEph = configs['nEph']
@@ -91,7 +99,7 @@ Lambda = int(size_pop * 1.2)
 nbCPU = multiprocess.cpu_count()  # threads to use
 
 # create save folder
-save_path = configs["save_path"] + '{}/{}/'.format(bench, algo)
+save_path = BASE_DIR + '/' + configs["save_path"] + '{}/{}/'.format(bench, algo)
 try:
     os.makedirs(save_path)
 except FileExistsError:

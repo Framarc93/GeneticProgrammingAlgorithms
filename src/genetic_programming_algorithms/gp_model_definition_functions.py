@@ -26,21 +26,21 @@ from deap import gp, creator, base, tools
 import operator
 import numpy as np
 import random
-import src.primitive_set as gpprim
+import genetic_programming_algorithms.primitive_set as gpprim
 from functools import partial
-from src.selection_functions import InclusiveTournament, InclusiveTournament3D, selDoubleTournament_MGGP
-from src.mutation_functions import xmutMultiple, xmut_MGGP
-from src.utils import initRepeatRandom
-from src.crossover_functions import xmate_MGGP
-from src.bloat_control import staticLimit_mutShrink
-from src.niches_manipulation import subset_diversity_genotype, subset_diversity_pheno3D_2fit
-from src.recombination_functions import varOr_IGP, varOr_FIGP
-from src.pop_classes import POP_geno, POP_pheno_3D_2fit
-from src.pop_init import pop_init_geno, pop_init_pheno_geno
-from src.evolutionary_strategies import InclusiveMuPlusLambda, MuPlusLambdaMGGP
+from genetic_programming_algorithms.selection_functions import InclusiveTournament, InclusiveTournament3D, selDoubleTournament_MGGP
+from genetic_programming_algorithms.mutation_functions import xmutMultiple, xmut_MGGP
+from genetic_programming_algorithms.utils import initRepeatRandom
+from genetic_programming_algorithms.crossover_functions import xmate_MGGP
+from genetic_programming_algorithms.bloat_control import staticLimit_mutShrink
+from genetic_programming_algorithms.niches_manipulation import subset_diversity_genotype, subset_diversity_pheno3D_2fit
+from genetic_programming_algorithms.recombination_functions import varOr_IGP, varOr_FIGP
+from genetic_programming_algorithms.pop_classes import POP_geno, POP_pheno_3D_2fit
+from genetic_programming_algorithms.pop_init import pop_init_geno, pop_init_pheno_geno
+from genetic_programming_algorithms.evolutionary_strategies import InclusiveMuPlusLambda, MuPlusLambdaMGGP
 from examples.regression.evaluate_functions import evaluate_regression
-from src.MGGP_utils import evaluate_subtree
-from src.recombination_functions import varOr
+from genetic_programming_algorithms.MGGP_utils import evaluate_subtree
+from genetic_programming_algorithms.recombination_functions import varOr
 
 
 def ephemeral_creation(Eph_max):
