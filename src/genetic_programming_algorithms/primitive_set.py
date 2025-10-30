@@ -25,6 +25,7 @@
 """Collection of primitive functions used for the genetic programming evaluation"""
 
 import numpy as np
+import operator
 
 def lf(x): return 1 / (1 + np.exp(-x))
 
@@ -125,3 +126,57 @@ def Square(x):
 
 def tanh_der(x):
     return 1-np.tanh(x)**2
+
+
+def create_primitive_set(pset, primitives_list):
+
+    if "lf" in primitives_list:
+        pset.addPrimitive(lf, 1)
+    if "posTanh" in primitives_list:
+        pset.addPrimitive(posTanh, 1)
+    if "posSub" in primitives_list:
+        pset.addPrimitive(posSub, 2)
+    if "posTriAdd" in primitives_list:
+        pset.addPrimitive(posTriAdd, 3)
+    if "TriAdd" in primitives_list:
+        pset.addPrimitive(TriAdd, 3)
+    if "TriMul" in primitives_list:
+        pset.addPrimitive(TriMul, 3)
+    if "posAdd" in primitives_list:
+        pset.addPrimitive(posAdd, 2)
+    if "posMul" in primitives_list:
+        pset.addPrimitive(posMul, 2)
+    if "Identity" in primitives_list:
+        pset.addPrimitive(Identity, 1)
+    if "Neg" in primitives_list:
+        pset.addPrimitive(Neg, 1)
+    if "Abs" in primitives_list:
+        pset.addPrimitive(Abs, 1)
+    if "Div" in primitives_list:
+        pset.addPrimitive(Div, 2)
+    if "Mul" in primitives_list:
+        pset.addPrimitive(Mul, 2)
+    if "ModSqrt" in primitives_list:
+        pset.addPrimitive(ModSqrt, 1)
+    if "ModLog" in primitives_list:
+        pset.addPrimitive(ModLog, 1)
+    if "ModExp" in primitives_list:
+        pset.addPrimitive(ModExp, 1)
+    if "Square" in primitives_list:
+        pset.addPrimitive(Square, 1)
+    if "tanh_der" in primitives_list:
+        pset.addPrimitive(tanh_der, 1)
+    if "add" in primitives_list:
+        pset.addPrimitive(operator.add, 2)
+    if "sub" in primitives_list:
+        pset.addPrimitive(operator.sub, 2)
+    if "mul" in primitives_list:
+        pset.addPrimitive(operator.mul, 2)
+    if "tanh" in primitives_list:
+        pset.addPrimitive(np.tanh, 1)
+    if "sin" in primitives_list:
+        pset.addPrimitive(np.sin, 1)
+    if "cos" in primitives_list:
+        pset.addPrimitive(np.cos, 1)
+
+    return pset

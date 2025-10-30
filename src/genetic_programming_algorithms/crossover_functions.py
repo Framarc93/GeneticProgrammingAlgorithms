@@ -100,3 +100,13 @@ def xmate_MGGP(ind1, ind2, NgenesMax, stdCxpb):
             del ind2[random.randint(0, len(ind2)-1)]
 
     return ind1, ind2
+
+
+def xmate_MGGP_multiple(ind1, ind2, NgenesMax, stdCxpb):
+    """
+    From [1] and modified. This function is used to perform crossover in individuals composed by multiple subtrees.
+    """
+
+    for i in range(len(ind1)):
+        ind1[i], ind2[i] = xmate_MGGP(ind1[i], ind2[i], NgenesMax, stdCxpb)
+    return ind1, ind2

@@ -92,3 +92,18 @@ def xmut_MGGP(ind, expr, pset, unipb, nodepb):
         indx1 = gp.mutEphemeral(ind[ch], mode='one')
         ind[ch] = indx1[0]
     return ind,
+
+def xmut_MGGP_multiple(ind, expr, pset, unipb, nodepb):
+    for i in range(len(ind)):
+        ch = random.randint(0, len(ind[i])-1)
+        choice = random.random()
+        if choice < unipb:
+            indx1 = gp.mutUniform(ind[i][ch], expr=expr, pset=pset)
+            ind[i][ch] = indx1[0]
+        elif choice < unipb + nodepb:
+            indx1 = gp.mutNodeReplacement(ind[i][ch], pset=pset)
+            ind[i][ch] = indx1[0]
+        else:
+            indx1 = gp.mutEphemeral(ind[i][ch], mode='one')
+            ind[i][ch] = indx1[0]
+    return ind,

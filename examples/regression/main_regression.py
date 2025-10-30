@@ -38,15 +38,15 @@ from data.data_handling import retrieve_dataset
 import yaml
 from yaml.loader import SafeLoader
 import numpy as np
-from examples.regression.data.data_handling import select_testcase
+from data.data_handling import select_testcase
 from time import time
 from deap import gp
 from copy import copy
 import matplotlib.pyplot as plt
 from genetic_programming_algorithms.gp_model_definition_functions import define_IGP_model, define_FIGP_model, define_MGGP_model
 from genetic_programming_algorithms.MGGP_utils import build_funcString
-from genetic_programming_algorithms.MGGP_utils import lst_matrix
-from evaluate_functions import evaluate_regression
+from genetic_programming_algorithms.MGGP_utils import lst_matrix, lst_matrix_noVal
+from evaluate_functions import evaluate_regression, evaluate_regression_noVal
 import multiprocess
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -63,13 +63,26 @@ bench = "503_wind"    # select the benchmark
 match algo:
     case "IGP":
         define_GP_model = define_IGP_model
-        evaluation_function = evaluate_regression
+        fitness_validation = True
+        if fitness_validation is True:
+            evaluation_function = evaluate_regression
+        else:
+            evaluation_function = evaluate_regression_noVal
+        evaluate_regression_fun = []
     case "FIGP":
         define_GP_model = define_FIGP_model
         evaluation_function = evaluate_regression
+        fitness_validation = True
+        evaluate_regression_fun = []
     case "MGGP":
         define_GP_model = define_MGGP_model
-        evaluation_function = lst_matrix
+        fitness_validation = True
+        if fitness_validation is True:
+            evaluation_function = lst_matrix
+            evaluate_regression_fun = evaluate_regression
+        else:
+            evaluation_function = lst_matrix_noVal
+            evaluate_regression_fun = evaluate_regression_noVal
     case _:
         print("Select a GP algorithm between IGP, FIGP and MGGP.")
 
@@ -100,10 +113,11 @@ test_perc = configs['test_perc']
 val_perc = configs['val_perc']
 NgenesMax = configs['NgenesMax']
 stdCxpb = configs['stdCxpb']
+primitives_list = configs['primitives_list']
 
 Mu = int(size_pop)
 Lambda = int(size_pop * 1.2)
-nbCPU = multiprocess.cpu_count()  # threads to use
+nbCPU = multiprocess.cpu_count()  # number of threads to use
 
 # create save folder
 save_path = BASE_DIR + '/' + configs["save_path"] + '{}_{}/'.format(algo, bench)
@@ -119,8 +133,11 @@ terminals, X_train, y_train, X_val, y_val, X_test, y_test = select_testcase(benc
 
 for n in range(ntot):
 
-    pset, creator, toolbox = define_GP_model(terminals, 1, nEph, Eph_max, limit_height, limit_size, n, evaluation_function,
-                                             fitness_validation=True, kwargs={'NgenesMax': NgenesMax, 'stdCxpb': stdCxpb, 'evaluate_regression': evaluate_regression})
+    pset, creator, toolbox = define_GP_model(terminals, 1, nEph, Eph_max, limit_height, limit_size, n,
+                                             evaluation_function, primitives_list,
+                                             kwargs={'NgenesMax': NgenesMax, 'stdCxpb': stdCxpb,
+                                                     'evaluate_regression': evaluate_regression_fun,
+                                                     'fitness_validation':fitness_validation})
 
     if __name__ == "__main__":
 

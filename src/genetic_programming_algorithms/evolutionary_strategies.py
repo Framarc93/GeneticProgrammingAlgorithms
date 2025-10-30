@@ -227,10 +227,14 @@ def MuPlusLambdaMGGP(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset, 
     # assign evaluated fitness to population
     invalid_ind_orig = [ind for ind in population if not ind.fitness.valid]
     for ind, fit in zip(invalid_ind_orig, fitnesses):
-        ind.fitness.values = fit[0]
-        if len(fit) > 1:
-            ind.fitness_validation.values = fit[2]
-        ind.w = fit[-1]
+        ind.fitness.values = fit[0],
+        if len(fit) > 4:
+            ind.fitness_validation.values = fit[2],
+        if hasattr(creator, "SubIndividual") and isinstance(population[0][0], creator.SubIndividual) and len(population[0][0]) > 1:
+            for ii in range(len(population[0])):
+                ind[ii].w = fit[-len(population[0])+ii]
+        else:
+            ind.w = fit[-1]
 
     # compute statistics on population
     all_lengths = []
@@ -290,10 +294,15 @@ def MuPlusLambdaMGGP(population, toolbox, mu, lambda_, ngen, cxpb, mutpb, pset, 
 
         # assign fitness to evaluated individuals
         for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit[0]
-            if len(fit) > 1:
-                ind.fitness_validation.values = fit[2]
-            ind.w = fit[-1]
+            ind.fitness.values = fit[0],
+            if len(fit) > 4:
+                ind.fitness_validation.values = fit[2],
+            if hasattr(creator, "SubIndividual") and isinstance(population[0][0], creator.SubIndividual) and len(
+                    population[0][0]) > 1:
+                for ii in range(len(population[0])):
+                    ind[ii].w = fit[-len(population[0]) + ii]
+            else:
+                ind.w = fit[-1]
 
         # Update the hall of fame with the generated individuals
         if halloffame is not None:

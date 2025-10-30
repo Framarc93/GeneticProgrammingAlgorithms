@@ -63,6 +63,7 @@ bench = "inverted_pendulum"    # select the benchmark
 match algo:
     case "IGP":
         define_GP_model = define_IGP_model
+        fitness_validation = False
     case "FIGP":
         ##### Currently only the IGP is configured to work for control applications
         pass
@@ -93,6 +94,7 @@ save_pop = configs['save_pop']
 mutpb = configs['mutpb']
 cxpb = configs['cxpb']
 cx_lim = configs['cx_lim']
+primitives_list = configs['primitives_list']
 
 Mu = int(size_pop)
 Lambda = int(size_pop * 1.2)
@@ -110,7 +112,7 @@ to_save = np.array(['t_evaluate', 'RMSE_train', 'RMSE_test'])
 
 for n in range(ntot):
     pset, creator, toolbox = define_GP_model(plant.n_states, plant.n_controls, nEph, Eph_max, limit_height, limit_size,
-                                             n, evaluation_function, fitness_validation=False)
+                                             n, evaluation_function, primitives_list, kwargs={'fitness_validation':fitness_validation})
 
     if __name__ == "__main__":
 

@@ -29,9 +29,9 @@ import random
 from . import primitive_set as gpprim
 from functools import partial
 from .selection_functions import InclusiveTournament, InclusiveTournament3D, selDoubleTournament_MGGP
-from .mutation_functions import xmutMultiple, xmut_MGGP
+from .mutation_functions import xmutMultiple, xmut_MGGP, xmut_MGGP_multiple
 from .utils import initRepeatRandom
-from .crossover_functions import xmate_MGGP, xmateMultiple
+from .crossover_functions import xmate_MGGP, xmateMultiple, xmate_MGGP_multiple
 from .bloat_control import staticLimit_mutShrink
 from .niches_manipulation import subset_diversity_genotype, subset_diversity_pheno3D_2fit
 from .recombination_functions import varOr_IGP, varOr_FIGP
@@ -47,21 +47,13 @@ def ephemeral_creation(Eph_max):
     return round(random.uniform(-Eph_max, Eph_max), 4)
 
 
-def define_IGP_model(terminals, n_subindividuals, nEph, Eph_max, limit_height, limit_size, n, evaluate_function, fitness_validation, **kwargs):
+def define_IGP_model(terminals, n_subindividuals, nEph, Eph_max, limit_height, limit_size, n, evaluate_function, primitives_list, **kwargs):
     ####################################    P R I M I T I V E  -  S E T     ############################################
 
+    fitness_validation = kwargs['kwargs']['fitness_validation']
+
     pset = gp.PrimitiveSet("Main", terminals)
-    pset.addPrimitive(operator.add, 2)
-    pset.addPrimitive(operator.sub, 2)
-    pset.addPrimitive(operator.mul, 2)
-    pset.addPrimitive(gpprim.TriAdd, 3)
-    pset.addPrimitive(gpprim.TriMul, 3)
-    pset.addPrimitive(np.tanh, 1)
-    pset.addPrimitive(gpprim.Square, 1)
-    pset.addPrimitive(gpprim.ModLog, 1)
-    pset.addPrimitive(gpprim.ModExp, 1)
-    pset.addPrimitive(np.sin, 1)
-    pset.addPrimitive(np.cos, 1)
+    pset = gpprim.create_primitive_set(pset, primitives_list)
 
     for i in range(nEph):
         pset.addEphemeralConstant("rand{}_{}".format(i, n), partial(ephemeral_creation, Eph_max=Eph_max))
@@ -106,11 +98,12 @@ def define_IGP_model(terminals, n_subindividuals, nEph, Eph_max, limit_height, l
         toolbox.decorate("mutate", staticLimit_subTrees(key=len, max_value=limit_size))
     else:
         toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
-        toolbox.register("mate", gp.cxOnePoint)  ### NEW ##
+        toolbox.register("mate", gp.cxOnePoint)
         toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=limit_height))
         toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max_value=limit_height))
         toolbox.decorate("mate", gp.staticLimit(key=len, max_value=limit_size))
         toolbox.decorate("mutate", gp.staticLimit(key=len, max_value=limit_size))
+
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("niches_generation", subset_diversity_genotype)
     toolbox.register("evol_strategy", InclusiveMuPlusLambda)
@@ -126,21 +119,11 @@ def define_IGP_model(terminals, n_subindividuals, nEph, Eph_max, limit_height, l
     return pset, creator, toolbox
 
 
-def define_FIGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, evaluate_function, **kwargs):
+def define_FIGP_model(terminals, n_subindividuals, nEph, Eph_max, limit_height, limit_size, n, evaluate_function, primitives_list, **kwargs):
     ####################################    P R I M I T I V E  -  S E T     ################################################
 
     pset = gp.PrimitiveSet("Main", terminals)
-    pset.addPrimitive(operator.add, 2)
-    pset.addPrimitive(operator.sub, 2)
-    pset.addPrimitive(operator.mul, 2)
-    pset.addPrimitive(gpprim.TriAdd, 3)
-    pset.addPrimitive(gpprim.TriMul, 3)
-    pset.addPrimitive(np.tanh, 1)
-    pset.addPrimitive(gpprim.Square, 1)
-    pset.addPrimitive(gpprim.ModLog, 1)
-    pset.addPrimitive(gpprim.ModExp, 1)
-    pset.addPrimitive(np.sin, 1)
-    pset.addPrimitive(np.cos, 1)
+    pset = gpprim.create_primitive_set(pset, primitives_list)
 
     for i in range(nEph):
         pset.addEphemeralConstant("rand{}_{}".format(i, n), partial(ephemeral_creation, Eph_max=Eph_max))
@@ -154,12 +137,36 @@ def define_FIGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, eva
     ################################################## TOOLBOX #############################################################
 
     creator.create("Fitness", base.Fitness, weights=(-1.0, -1.0))
-    creator.create("Individual", gp.PrimitiveTree, fitness=creator.Fitness, fitness_validation=creator.Fitness)
+    if n_subindividuals > 1:
+        creator.create("Individual", list, fitness=creator.Fitness, fitness_validation=creator.Fitness)
+        creator.create("SubIndividual", gp.PrimitiveTree)
+    else:
+        creator.create("Individual", gp.PrimitiveTree, fitness=creator.Fitness, fitness_validation=creator.Fitness)
 
     toolbox = base.Toolbox()
 
     toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=1, max_=4)
-    toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
+    toolbox.register("expr_mut", gp.genHalfAndHalf, min_=1, max_=4)
+    toolbox.register("mutate", xmutMultiple, expr=toolbox.expr_mut, unipb=0.55, shrpb=0.05, inspb=0.25, pset=pset,
+                     creator=creator)
+
+    if n_subindividuals > 1:
+        toolbox.register("leg", tools.initIterate, creator.SubIndividual, toolbox.expr)
+        toolbox.register("legs", tools.initCycle, list, [toolbox.leg], n=n_subindividuals)
+        toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.legs)
+        toolbox.register("mate", xmateMultiple)
+        toolbox.decorate("mate", staticLimit_subTrees(key=operator.attrgetter("height"), max_value=limit_height))
+        toolbox.decorate("mutate", staticLimit_subTrees(key=operator.attrgetter("height"), max_value=limit_height))
+        toolbox.decorate("mate", staticLimit_subTrees(key=len, max_value=limit_size))
+        toolbox.decorate("mutate", staticLimit_subTrees(key=len, max_value=limit_size))
+    else:
+        toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
+        toolbox.register("mate", gp.cxOnePoint)  ### NEW ##
+        toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=limit_height))
+        toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max_value=limit_height))
+        toolbox.decorate("mate", gp.staticLimit(key=len, max_value=limit_size))
+        toolbox.decorate("mutate", gp.staticLimit(key=len, max_value=limit_size))
+
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("niches_generation", subset_diversity_pheno3D_2fit)
     toolbox.register("evol_strategy", InclusiveMuPlusLambda)
@@ -169,35 +176,18 @@ def define_FIGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, eva
     toolbox.register("compile", gp.compile, pset=pset)
     toolbox.register("evaluate", evaluate_function)
     toolbox.register("select", InclusiveTournament3D, selected_individuals=1, fitness_size=2, parsimony_size=1.6, creator=creator)
-    toolbox.register("mate", gp.cxOnePoint)
-    toolbox.register("expr_mut", gp.genHalfAndHalf, min_=1, max_=4)
-    toolbox.register("mutate", xmutMultiple, expr=toolbox.expr_mut, unipb=0.55, shrpb=0.05, inspb=0.25, pset=pset,
-                     creator=creator)
-    toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=limit_height))
-    toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max_value=limit_height))
-    toolbox.decorate("mate", gp.staticLimit(key=len, max_value=limit_size))
-    toolbox.decorate("mutate", gp.staticLimit(key=len, max_value=limit_size))
 
     return pset, creator, toolbox
 
-def define_MGGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, evaluate_function, **kwargs):
+def define_MGGP_model(terminals, n_subindividuals, nEph, Eph_max, limit_height, limit_size, n, evaluate_function, primitives_list, **kwargs):
 
     NgenesMax = kwargs['kwargs']["NgenesMax"]
     stdCxpb = kwargs['kwargs']["stdCxpb"]
     evaluate_regression = kwargs['kwargs']["evaluate_regression"]
+    fitness_validation = kwargs['kwargs']['fitness_validation']
 
     pset = gp.PrimitiveSet("Main", terminals)
-    pset.addPrimitive(operator.add, 2)
-    pset.addPrimitive(operator.sub, 2)
-    pset.addPrimitive(operator.mul, 2)
-    pset.addPrimitive(gpprim.TriAdd, 3)
-    pset.addPrimitive(gpprim.TriMul, 3)
-    pset.addPrimitive(np.tanh, 1)
-    pset.addPrimitive(gpprim.Square, 1)
-    pset.addPrimitive(gpprim.ModLog, 1)
-    pset.addPrimitive(gpprim.ModExp, 1)
-    pset.addPrimitive(np.sin, 1)
-    pset.addPrimitive(np.cos, 1)
+    pset = gpprim.create_primitive_set(pset, primitives_list)
 
     for i in range(nEph):
         pset.addEphemeralConstant("rand{}_{}".format(i, n), partial(ephemeral_creation, Eph_max=Eph_max))
@@ -213,16 +203,45 @@ def define_MGGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, eva
     A = []
     wLen = 0  # weighted length
 
-    creator.create("Fitness", base.Fitness, weights=(-1.0, -1.0))
-    creator.create("Individual", list, fitness=creator.Fitness, fitness_validation=creator.Fitness, w=d, A=A, wLen=wLen, height=1)
-    creator.create("SubIndividual", gp.PrimitiveTree)
+    creator.create("Fitness", base.Fitness, weights=(-1.0,))
+
+    if fitness_validation is True:
+        if n_subindividuals > 1:
+            creator.create("Individual", list, fitness=creator.Fitness, fitness_validation=creator.Fitness)
+            creator.create("SubIndividual", list, w=d, A=A, wLen=wLen, height=1)
+            creator.create("Gene", gp.PrimitiveTree)
+        else:
+            creator.create("Individual", list, fitness=creator.Fitness, fitness_validation=creator.Fitness, w=d, A=A, wLen=wLen, height=1)
+            creator.create("Gene", gp.PrimitiveTree)
+    else:
+        if n_subindividuals > 1:
+            creator.create("Individual", list, fitness=creator.Fitness)
+            creator.create("SubIndividual", list, w=d, A=A, wLen=wLen, height=1)
+            creator.create("Gene", gp.PrimitiveTree)
+        else:
+            creator.create("Individual", list, fitness=creator.Fitness, w=d, A=A, wLen=wLen, height=1)
+            creator.create("Gene", gp.PrimitiveTree)
 
     toolbox = base.Toolbox()
 
     toolbox.register("expr", gp.genHalfAndHalf, pset=pset, type_=pset.ret, min_=1, max_=4)
-    toolbox.register("leg", tools.initIterate, creator.SubIndividual, toolbox.expr)
-    toolbox.register("legs", initRepeatRandom, list, toolbox.leg, n=NgenesMax)
-    toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.legs)
+    toolbox.register("expr_mut", gp.genHalfAndHalf, min_=1, max_=4)
+
+    if n_subindividuals > 1:
+        toolbox.register("gene", tools.initIterate, creator.Gene, toolbox.expr)
+        toolbox.register("genes", initRepeatRandom, list, toolbox.gene, n=NgenesMax)
+        toolbox.register("subInd", tools.initIterate, creator.SubIndividual, toolbox.genes)
+        toolbox.register("subInds", tools.initCycle, list, [toolbox.subInd], n=2)
+        toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.subInds)
+        toolbox.register("mate", xmate_MGGP_multiple, NgenesMax=NgenesMax, stdCxpb=stdCxpb)
+        toolbox.register("mutate", xmut_MGGP_multiple, pset=pset, expr=toolbox.expr_mut, unipb=0.9, nodepb=0.05)
+    else:
+        toolbox.register("gene", tools.initIterate, creator.Gene, toolbox.expr)
+        toolbox.register("genes", initRepeatRandom, list, toolbox.gene, n=NgenesMax)
+        toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.genes)
+        toolbox.register("mate", xmate_MGGP, NgenesMax=NgenesMax, stdCxpb=stdCxpb)
+        toolbox.register("mutate", xmut_MGGP, pset=pset, expr=toolbox.expr_mut, unipb=0.9, nodepb=0.05)
+
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("compile", gp.compile, pset=pset)
     toolbox.register("evaluate", evaluate_function, evaluate=evaluate_regression, evaluate_subtree=evaluate_subtree)
@@ -230,9 +249,6 @@ def define_MGGP_model(terminals, nEph, Eph_max, limit_height, limit_size, n, eva
     toolbox.register("POP_class", POP_geno)
     toolbox.register("varOr", varOr)
     toolbox.register("select", selDoubleTournament_MGGP, fitness_size=2, parsimony_size=1.2, fitness_first=True)
-    toolbox.register("mate", xmate_MGGP, NgenesMax=NgenesMax, stdCxpb=stdCxpb)
-    toolbox.register("expr_mut", gp.genHalfAndHalf, min_=1, max_=4)
-    toolbox.register("mutate", xmut_MGGP, pset=pset, expr=toolbox.expr_mut, unipb=0.9, nodepb=0.05)
     toolbox.decorate("mate", staticLimit_mutShrink(key=operator.attrgetter("height"), max_value=limit_height))
     toolbox.decorate("mutate", staticLimit_mutShrink(key=operator.attrgetter("height"), max_value=limit_height))
     toolbox.decorate("mate", staticLimit_mutShrink(key=len, max_value=limit_size))

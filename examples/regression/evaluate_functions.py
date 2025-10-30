@@ -22,4 +22,19 @@ def evaluate_regression(individual, compile, **kwargs):
     return fitness_train, 0.0, fitness_val, 0.0
 
 
+def evaluate_regression_noVal(individual, compile, **kwargs):
+    X_train = kwargs['kwargs']['X_train']
+    y_train = kwargs['kwargs']['y_train']
+
+    f_ind = compile(individual)
+    pred_train = f_ind(*X_train)
+    if not hasattr(pred_train, "__len__"):
+        pred_train = np.ones(len(y_train)) * pred_train
+    err_train = y_train - pred_train
+
+    fitness_train = np.sqrt(sum(err_train**2)/(len(err_train)))
+
+    return fitness_train, 0.0
+
+
 

@@ -18,6 +18,8 @@
  save_pop: True               # flag to save whole population each generation
  save_path: "results/"        # path where to save data
 
+ # list of primitives to use in the GP tree
+ primitives_list: ["add", "sub", "mul", "tanh", "sin", "cos", "TriAdd", "TriMul"]
 
 
 
