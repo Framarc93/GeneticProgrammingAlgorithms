@@ -34,7 +34,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src")))
 
 from genetic_programming_algorithms.main_functions import main_evolProcess
-from data.data_handling import retrieve_dataset
+from data.data_handling import retrieve_dataset_pmlb
 import yaml
 from yaml.loader import SafeLoader
 import numpy as np
@@ -87,7 +87,7 @@ match algo:
         print("Select a GP algorithm between IGP, FIGP and MGGP.")
 
 
-retrieve_dataset(bench) # download and shuffle dataset
+retrieve_dataset_pmlb(bench) # download and shuffle dataset
 
 with open(BASE_DIR + '/regression_config.yaml') as f:
     configs = yaml.load(f, Loader=SafeLoader) # load configs
@@ -129,7 +129,8 @@ except FileExistsError:
 # define quantities to save
 to_save = np.array(['t_evaluate', 'RMSE_train', 'RMSE_test'])
 
-terminals, X_train, y_train, X_val, y_val, X_test, y_test = select_testcase(bench, test_perc, val_perc)
+dataset_path = BASE_DIR + "/data"
+terminals, X_train, y_train, X_val, y_val, X_test, y_test, scaler = select_testcase(bench, test_perc, val_perc, dataset_path)
 
 for n in range(ntot):
 

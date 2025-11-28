@@ -36,7 +36,7 @@ import os
 # Base folder: where the script lives
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-def retrieve_dataset(bench):
+def retrieve_dataset_pmlb(bench):
     '''
     Author(s): Francesco Marchetti
     email: framarc93@gmail.com
@@ -63,7 +63,7 @@ def retrieve_dataset(bench):
         return
 
 
-def select_testcase(bench, test_perc, val_perc):
+def select_testcase(bench, test_perc, val_perc, dataset_path):
     '''
     Author(s): Francesco Marchetti
     email: framarc93@gmail.com
@@ -80,7 +80,7 @@ def select_testcase(bench, test_perc, val_perc):
             percentage of data to use for validation
     '''
 
-    df = pd.read_csv(BASE_DIR + '/{}_shuffled.csv'.format(bench))
+    df = pd.read_csv(dataset_path + '/{}_shuffled.csv'.format(bench))
     scaler = MinMaxScaler()
     data = pd.DataFrame(scaler.fit_transform(df), columns=df.columns)
 
@@ -104,4 +104,4 @@ def select_testcase(bench, test_perc, val_perc):
     print("y val shape: {}".format(y_val.shape))
 
     return (terminals, X_train.values.T, y_train.values.T, X_val.values.T,
-            y_val.values.T, X_test.values.T, y_test.values.T)
+            y_val.values.T, X_test.values.T, y_test.values.T, scaler)
