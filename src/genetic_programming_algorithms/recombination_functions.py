@@ -54,7 +54,7 @@ def varOr_IGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb
         limit_size : int
             size limit used to accept or not the mutation performed on an individual
     """
-    assert (cxpb + mutpb) == 1.0, (
+    assert (round(cxpb, 2) + round(mutpb, 2)) == 1.0, (
         "The sum of the crossover and mutation probabilities must be equal to 1.0. The best individual is always passsed")
 
     offspring = []
