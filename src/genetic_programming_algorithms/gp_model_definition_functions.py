@@ -50,7 +50,15 @@ def ephemeral_creation(Eph_max):
 def define_IGP_model(terminals, n_subindividuals, nEph, Eph_max, limit_height, limit_size, n, evaluate_function, primitives_list, **kwargs):
     ####################################    P R I M I T I V E  -  S E T     ############################################
 
-    fitness_validation = kwargs['kwargs']['fitness_validation']
+    try:
+        fitness_validation = kwargs['kwargs']['fitness_validation']
+    except KeyError:
+        fitness_validation = False
+
+    try:
+        var_names = kwargs['kwargs']['var_names']
+    except KeyError:
+        var_names = None
 
     pset = gp.PrimitiveSet("Main", terminals)
     pset = gpprim.create_primitive_set(pset, primitives_list)
@@ -59,10 +67,13 @@ def define_IGP_model(terminals, n_subindividuals, nEph, Eph_max, limit_height, l
         pset.addEphemeralConstant("rand{}_{}".format(i, n), partial(ephemeral_creation, Eph_max=Eph_max))
 
     for i in range(len(pset.arguments)):
-        pset.arguments[i] = 'x{}'.format(i)
-        pset.mapping['x{}'.format(i)] = pset.mapping['ARG{}'.format(i)]
-        pset.mapping['x{}'.format(i)].value = 'x{}'.format(i)
-        del pset.mapping['ARG{}'.format(i)]
+        if var_names is not None:
+            pset.renameArguments(**{f"ARG{i}": var_names[i]})
+        else:
+            pset.arguments[i] = 'x{}'.format(i)
+            pset.mapping['x{}'.format(i)] = pset.mapping['ARG{}'.format(i)]
+            pset.mapping['x{}'.format(i)].value = 'x{}'.format(i)
+            del pset.mapping['ARG{}'.format(i)]
 
     ################################################## TOOLBOX #########################################################
 
