@@ -1,5 +1,7 @@
 from functools import partial
 from copy import copy
+import numpy as np
+
 
 def pop_init_geno(size_pop, toolbox, creator, init_repeat, **kwargs):
 
@@ -42,7 +44,7 @@ def pop_init_pheno_geno(size_pop, toolbox, creator, init_repeat, **kwargs):
     return best_pop
 
 
-def load_population(n_iter, toolbox, creator, hof, settingsGP):
+def load_population(n_iter, toolbox, creator, hof, settingsGP, **kwargs):
     """
     Builds the initial population starting from a population produced as output of a previous evolution
 
@@ -91,7 +93,7 @@ def load_population(n_iter, toolbox, creator, hof, settingsGP):
     num_to_compute = population_size - num_to_pass
 
     if num_to_compute > 0:
-        best_population_comp = init_population_max_entropy(n_iter, toolbox, creator, settingsGP)
+        best_population_comp = toolbox.pop_init(settingsGP["population_size"], toolbox, creator, n_iter,  kwargs=kwargs['kwargs'])
         init_population[num_to_pass:] = best_population_comp
 
     best_population = hof(population_size)
@@ -102,3 +104,35 @@ def load_population(n_iter, toolbox, creator, hof, settingsGP):
         del init_population[i].fitness.values
 
     return init_population
+
+
+def sort_individuals(population):
+    n = len(population)
+
+    for i in range(n):
+        # Create a flag that will allow the function to
+        # terminate early if there's nothing left to sort
+        already_sorted = True
+
+        # Start looking at each item of the list one by one,
+        # comparing it with its adjacent value. With each
+        # iteration, the portion of the array that you look at
+        # shrinks because the remaining items have already been
+        # sorted.
+        for j in range(n - i - 1):
+            if population[j].fitness.values[0] > population[j + 1].fitness.values[0]:
+                # If the item you're looking at is greater than its
+                # adjacent value, then swap them
+                population[j], population[j + 1] = population[j + 1], population[j]
+
+                # Since you had to swap two elements,
+                # set the `already_sorted` flag to `False` so the
+                # algorithm doesn't finish prematurely
+                already_sorted = False
+
+        # If there were no swaps during the last iteration,
+        # the array is already sorted, and you can terminate
+        if already_sorted:
+            break
+
+    return population
