@@ -26,28 +26,32 @@
 This script is the main for the regression application. The user must select the algorithm and the benchmark
 """
 
-import sys
 import os
+import sys
 
 # Add the repo root to sys.path
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src")))
 
-from genetic_programming_algorithms.main_functions import main_evolProcess
-from data.data_handling import retrieve_dataset_pmlb
-import yaml
-from yaml.loader import SafeLoader
-import numpy as np
-from data.data_handling import select_testcase
-from time import time
-from deap import gp
 from copy import copy
+from time import time
+
 import matplotlib.pyplot as plt
-from genetic_programming_algorithms.gp_model_definition_functions import define_IGP_model, define_FIGP_model, define_MGGP_model
-from genetic_programming_algorithms.MGGP_utils import build_funcString
-from genetic_programming_algorithms.MGGP_utils import lst_matrix, lst_matrix_noVal
-from evaluate_functions import evaluate_regression, evaluate_regression_noVal
 import multiprocess
+import numpy as np
+import yaml
+from data.data_handling import retrieve_dataset_pmlb, select_testcase
+from deap import gp
+from evaluate_functions import evaluate_regression, evaluate_regression_noVal
+from yaml.loader import SafeLoader
+
+from genetic_programming_algorithms.gp_model_definition_functions import (
+    define_FIGP_model,
+    define_IGP_model,
+    define_MGGP_model,
+)
+from genetic_programming_algorithms.main_functions import main_evolProcess
+from genetic_programming_algorithms.MGGP_utils import build_funcString, lst_matrix, lst_matrix_noVal
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -57,8 +61,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 #################################################################################################################
 
-algo  = "IGP"         # select the GP algorithm. Choose between IGP, FIGP and MGGP
-bench = "503_wind"    # select the benchmark
+algo = "IGP"  # select the GP algorithm. Choose between IGP, FIGP and MGGP
+bench = "503_wind"  # select the benchmark
 
 match algo:
     case "IGP":
@@ -87,75 +91,100 @@ match algo:
         print("Select a GP algorithm between IGP, FIGP and MGGP.")
 
 
-retrieve_dataset_pmlb(bench) # download and shuffle dataset
+retrieve_dataset_pmlb(bench)  # download and shuffle dataset
 
-with open(BASE_DIR + '/regression_config.yaml') as f:
-    configs = yaml.load(f, Loader=SafeLoader) # load configs
+with open(BASE_DIR + "/regression_config.yaml") as f:
+    configs = yaml.load(f, Loader=SafeLoader)  # load configs
 
-nEph = configs['nEph']
-Eph_max = configs['Eph_max']
-limit_height = configs['limit_height']  # Max height (complexity) of the gp law
-limit_size = configs['limit_size']  # Max size (complexity) of the gp law
-size_pop = configs['size_pop']
-size_gen = configs['size_gen']  # Gen size
-cat_number_len = configs['cat_number_len']
-cat_number_fit = configs['cat_number_fit_train']
-cat_number_fit_val = configs['cat_number_fit_val']
-fit_scale = configs['fit_scale']
-fit_tol = configs['fit_tol']
+nEph = configs["nEph"]
+Eph_max = configs["Eph_max"]
+limit_height = configs["limit_height"]  # Max height (complexity) of the gp law
+limit_size = configs["limit_size"]  # Max size (complexity) of the gp law
+size_pop = configs["size_pop"]
+size_gen = configs["size_gen"]  # Gen size
+cat_number_len = configs["cat_number_len"]
+cat_number_fit = configs["cat_number_fit_train"]
+cat_number_fit_val = configs["cat_number_fit_val"]
+fit_scale = configs["fit_scale"]
+fit_tol = configs["fit_tol"]
 ntot = 1  # configs['ntot']
-save_gen = configs['save_gen']
-save_pop = configs['save_pop']
-mutpb = configs['mutpb']
-cxpb = configs['cxpb']
-cx_lim = configs['cx_lim']
-test_perc = configs['test_perc']
-val_perc = configs['val_perc']
-NgenesMax = configs['NgenesMax']
-stdCxpb = configs['stdCxpb']
-primitives_list = configs['primitives_list']
+save_gen = configs["save_gen"]
+save_pop = configs["save_pop"]
+mutpb = configs["mutpb"]
+cxpb = configs["cxpb"]
+cx_lim = configs["cx_lim"]
+test_perc = configs["test_perc"]
+val_perc = configs["val_perc"]
+NgenesMax = configs["NgenesMax"]
+stdCxpb = configs["stdCxpb"]
+primitives_list = configs["primitives_list"]
 
 Mu = int(size_pop)
 Lambda = int(size_pop * 1.2)
 nbCPU = multiprocess.cpu_count()  # number of threads to use
 
 # create save folder
-save_path = BASE_DIR + '/' + configs["save_path"] + '{}_{}/'.format(algo, bench)
+save_path = BASE_DIR + "/" + configs["save_path"] + f"{algo}_{bench}/"
 try:
     os.makedirs(save_path)
 except FileExistsError:
     pass
 
 # define quantities to save
-to_save = np.array(['t_evaluate', 'RMSE_train', 'RMSE_test'])
+to_save = np.array(["t_evaluate", "RMSE_train", "RMSE_test"])
 
 dataset_path = BASE_DIR + "/data"
-terminals, X_train, y_train, X_val, y_val, X_test, y_test, scaler = select_testcase(bench, test_perc, val_perc, dataset_path)
+terminals, X_train, y_train, X_val, y_val, X_test, y_test, scaler = select_testcase(
+    bench, test_perc, val_perc, dataset_path
+)
 
 for n in range(ntot):
-
-    pset, creator, toolbox = define_GP_model(terminals, 1, nEph, Eph_max, limit_height, limit_size, n,
-                                             evaluation_function, primitives_list,
-                                             kwargs={'NgenesMax': NgenesMax, 'stdCxpb': stdCxpb,
-                                                     'evaluate_regression': evaluate_regression_fun,
-                                                     'fitness_validation':fitness_validation})
+    pset, creator, toolbox = define_GP_model(
+        terminals,
+        1,
+        nEph,
+        Eph_max,
+        limit_height,
+        limit_size,
+        n,
+        evaluation_function,
+        primitives_list,
+        kwargs={
+            "NgenesMax": NgenesMax,
+            "stdCxpb": stdCxpb,
+            "evaluate_regression": evaluate_regression_fun,
+            "fitness_validation": fitness_validation,
+        },
+    )
 
     if __name__ == "__main__":
-
-        save_path_iter = save_path + 'Sim{}/'.format(n)
+        save_path_iter = save_path + f"Sim{n}/"
         try:
             os.makedirs(save_path_iter)
         except FileExistsError:
             pass
-        print("----------------------- Iteration {} ---------------------------".format(n))
+        print(f"----------------------- Iteration {n} ---------------------------")
 
         start = time()
 
-        pop, log, hof, pop_statistics, ind_lengths, pset = main_evolProcess(size_pop, size_gen, Mu, Lambda, cxpb, mutpb,
-                                                                            nbCPU, pset, creator, toolbox,configs=configs,
-                                                                            X_train=X_train, y_train=y_train, X_val=X_val,
-                                                                            y_val=y_val, save_path_iter=save_path_iter)
-
+        pop, log, hof, pop_statistics, ind_lengths, pset = main_evolProcess(
+            size_pop,
+            size_gen,
+            Mu,
+            Lambda,
+            cxpb,
+            mutpb,
+            nbCPU,
+            pset,
+            creator,
+            toolbox,
+            configs=configs,
+            X_train=X_train,
+            y_train=y_train,
+            X_val=X_val,
+            y_val=y_val,
+            save_path_iter=save_path_iter,
+        )
 
         end = time()
 
@@ -176,8 +205,8 @@ for n in range(ntot):
         fitness_test = []
         min_test = 100
         RMSE_train = 0
-        for i in range(size_gen):
-            best_ind = np.load(save_path_iter + 'Best_ind_{}'.format(i), allow_pickle=True)
+        for i in range(len(log)):
+            best_ind = np.load(save_path_iter + f"Best_ind_{i}", allow_pickle=True)
 
             if algo == "MGGP":
                 string = str(best_ind.w[0])
@@ -190,31 +219,47 @@ for n in range(ntot):
             f = gp.compile(best_ind, pset=pset)
             y_best_test = f(*X_test)
             err_test = y_test - y_best_test
-            RMSE_test = np.sqrt(sum(err_test ** 2) / (len(err_test)))
+            RMSE_test = np.sqrt(sum(err_test**2) / (len(err_test)))
             fitness_test.append(RMSE_test)
             if RMSE_test < min_test:
                 min_test = copy(RMSE_test)
                 y_best_train = f(*X_train)
                 err_train = y_train - y_best_train
-                RMSE_train = np.sqrt(sum(err_train ** 2) / (len(err_train)))
+                RMSE_train = np.sqrt(sum(err_train**2) / (len(err_train)))
 
         # Plot train, validation and test fitness evolution
         plt.figure(0)
-        plt.plot(np.linspace(0, size_gen - 1, size_gen), np.array(log.chapters["fitness"].select("min"))[:,0], label='Train')
-        plt.plot(np.linspace(0, size_gen - 1, size_gen), np.array(log.chapters["fitness_val"].select("min"))[:,0], label='Validation')
-        plt.plot(np.linspace(0, size_gen - 1, size_gen), fitness_test, label='Test')
-        plt.xlabel('Generations')
-        plt.ylabel('RMSE')
-        plt.legend(loc='best')
-        plt.savefig(save_path_iter + "fitness_evol.jpg".format(n))
+        plt.plot(
+            np.arange(len(log)),
+            np.array(log.chapters["fitness"].select("min"))[:, 0],
+            label="Train",
+        )
+        plt.plot(
+            np.arange(len(log)),
+            np.array(log.chapters["fitness_val"].select("min"))[:, 0],
+            label="Validation",
+        )
+        plt.plot(np.arange(len(log)), fitness_test, label="Test")
+        plt.xlabel("Generations")
+        plt.ylabel("RMSE")
+        plt.legend(loc="best")
+        plt.savefig(save_path_iter + "fitness_evol.jpg")
 
         # save data
-        np.save(save_path + '{}_{}_{}_train_fit_evol.npy'.format(n, algo, bench), np.array(log.chapters["fitness"].select("min"))[:,0])
-        np.save(save_path + '{}_{}_{}_test_fit_evol.npy'.format(n, algo, bench), fitness_test)
-        np.save(save_path + '{}_{}_{}_val_fit_evol.npy'.format(n, algo, bench), np.array(log.chapters["fitness_val"].select("min"))[:,0])
-        np.save(save_path + "{}_{}_{}_POP_STATS".format(n, algo, bench), pop_statistics)
-        np.save(save_path + "{}_{}_{}_IND_LENGTHS".format(n, algo, bench), ind_lengths)
-        np.save(save_path + "{}_{}_{}_GEN".format(n, algo, bench), log.select("gen"))
-        np.save(save_path + "{}_{}_{}_FIT".format(n, algo, bench), np.array(log.chapters['fitness'].select('min')))
+        np.save(
+            save_path + f"{n}_{algo}_{bench}_train_fit_evol.npy",
+            np.array(log.chapters["fitness"].select("min"))[:, 0],
+        )
+        np.save(save_path + f"{n}_{algo}_{bench}_test_fit_evol.npy", fitness_test)
+        np.save(
+            save_path + f"{n}_{algo}_{bench}_val_fit_evol.npy",
+            np.array(log.chapters["fitness_val"].select("min"))[:, 0],
+        )
+        np.save(save_path + f"{n}_{algo}_{bench}_POP_STATS", pop_statistics)
+        np.save(save_path + f"{n}_{algo}_{bench}_IND_LENGTHS", ind_lengths)
+        np.save(save_path + f"{n}_{algo}_{bench}_GEN", log.select("gen"))
+        np.save(
+            save_path + f"{n}_{algo}_{bench}_FIT", np.array(log.chapters["fitness"].select("min"))
+        )
         to_save = np.vstack((to_save, [t_offdesign, RMSE_train, min(fitness_test)]))
-        np.save(save_path + "{}_{}_{}_T_RMSE".format(n, algo, bench), to_save)
+        np.save(save_path + f"{n}_{algo}_{bench}_T_RMSE", to_save)

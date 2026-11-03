@@ -31,3 +31,31 @@ USA, 1996.
 5. https://www.mathworks.com/matlabcentral/fileexchange/68527-gptips-free-open-source-genetic-programming-and-symbolic-data-mining-matlab-toolbox
 
 
+
+## Development and checks
+
+Use Python 3.10–3.13 with the pinned scientific dependencies:
+
+```sh
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev]'
+ruff check src examples tests
+ruff format --check src examples tests
+pytest --cov=genetic_programming_algorithms --cov=examples --cov-report=term-missing
+```
+
+GitHub Actions runs these checks when a pull request is opened, updated with
+new commits, or reopened (not on standalone pushes), for Python
+3.10, 3.11, 3.12 and 3.13. Ruff enforces import ordering, unused-name checks,
+modern Python syntax and consistent formatting. Existing public function names
+are retained for compatibility. See https://docs.astral.sh/ruff/configuration/.
+
+Tests use small seeded populations and synthetic data; dataset downloads are
+mocked. Full benchmark campaigns are not run in CI. Coverage includes the
+example scripts so untested script paths remain visible.
+
+Regression dataset scaling is fitted on the training split only. Validation
+and test values may therefore fall outside [0, 1]. Protected numerical
+primitives no longer mutate input data. Impossible bloat limits raise
+ValueError instead of hanging.

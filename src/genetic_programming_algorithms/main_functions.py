@@ -23,20 +23,23 @@
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
 import multiprocess
-from deap import tools
 import numpy as np
+from deap import tools
+
 from .utils import HallOfFame_modified, Min
 
 
-def main_evolProcess(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, pset,  creator, toolbox, **kwargs):
+def main_evolProcess(
+    size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, pset, creator, toolbox, **kwargs
+):
 
-    init_repeat = kwargs['configs']['init_repeat']
+    init_repeat = kwargs["configs"]["init_repeat"]
 
     if nbCPU == 1:
-        toolbox.register('map', map)
+        toolbox.register("map", map)
     else:
         pool = multiprocess.Pool(nbCPU)
-        toolbox.register('map', pool.map)
+        toolbox.register("map", pool.map)
 
     if hasattr(toolbox, "pop_init"):
         best_pop = toolbox.pop_init(size_pop, toolbox, creator, init_repeat, kwargs=kwargs)
@@ -45,8 +48,8 @@ def main_evolProcess(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, pset,  
 
     hof = HallOfFame_modified(10)
 
-    print("INITIAL POP SIZE: %d" % size_pop)
-    print("GEN SIZE: %d" % size_gen)
+    print(f"INITIAL POP SIZE: {size_pop}")
+    print(f"GEN SIZE: {size_gen}")
     print("\n")
 
     stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
@@ -61,13 +64,24 @@ def main_evolProcess(size_pop, size_gen, Mu, Lambda, cxpb, mutpb, nbCPU, pset,  
 
     ####################################   EVOLUTIONARY ALGORITHM   -  EXECUTION   ###################################
 
-    pop, log, pop_statistics, ind_lengths, hof = toolbox.evol_strategy(best_pop, toolbox, Mu, Lambda, size_gen, cxpb, mutpb,
-                                                                   pset, creator, stats=mstats, halloffame=hof,
-                                                                       verbose=True, kwargs=kwargs)
+    pop, log, pop_statistics, ind_lengths, hof = toolbox.evol_strategy(
+        best_pop,
+        toolbox,
+        Mu,
+        Lambda,
+        size_gen,
+        cxpb,
+        mutpb,
+        pset,
+        creator,
+        stats=mstats,
+        halloffame=hof,
+        verbose=True,
+        kwargs=kwargs,
+    )
 
     ####################################################################################################################
     if nbCPU != 1:
         pool.close()
         pool.join()
     return pop, log, hof, pop_statistics, ind_lengths, pset
-

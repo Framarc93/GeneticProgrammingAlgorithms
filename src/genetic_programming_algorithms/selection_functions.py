@@ -29,14 +29,17 @@ References:
 [1] https://pastebin.com/QKMhafRq
 """
 
-import numpy as np
-from functools import partial
 import random
-from deap import tools
+from functools import partial
 from operator import attrgetter
 
+import numpy as np
+from deap import tools
 
-def InclusiveTournament(mu, organized_pop, good_indexes, selected_individuals, fitness_size, parsimony_size, creator):
+
+def InclusiveTournament(
+    mu, organized_pop, good_indexes, selected_individuals, fitness_size, parsimony_size, creator
+):
     """
     Author(s): Francesco Marchetti
     email: framarc93@gmail.com
@@ -48,20 +51,26 @@ def InclusiveTournament(mu, organized_pop, good_indexes, selected_individuals, f
     """
 
     chosen = []
-    exploited = np.zeros((len(good_indexes)))
+    exploited = np.zeros(len(good_indexes))
     j = 0
     while len(chosen) < mu:
         if j > len(good_indexes) - 1:
             j = 0
         i = good_indexes[j]
 
-        if exploited[j] < len(organized_pop["cat{}".format(i)]):
-            if len(organized_pop["cat{}".format(i)]) > 1:
-                selected = selDoubleTournament_IGP(organized_pop["cat{}".format(i)], selected_individuals, fitness_size,
-                                               parsimony_size, creator, fitness_first=True)
+        if exploited[j] < len(organized_pop[f"cat{i}"]):
+            if len(organized_pop[f"cat{i}"]) > 1:
+                selected = selDoubleTournament_IGP(
+                    organized_pop[f"cat{i}"],
+                    selected_individuals,
+                    fitness_size,
+                    parsimony_size,
+                    creator,
+                    fitness_first=True,
+                )
                 chosen.append(selected)
             else:
-                chosen.append(organized_pop["cat{}".format(i)][0])
+                chosen.append(organized_pop[f"cat{i}"][0])
             exploited[j] += 1
         j += 1
     return chosen
@@ -69,12 +78,12 @@ def InclusiveTournament(mu, organized_pop, good_indexes, selected_individuals, f
 
 def selDoubleTournament_IGP(individuals, k, fitness_size, parsimony_size, creator, fitness_first):
     """This is a modification of the xselDoubleTournament function from [1] which itself is a modification of
-     the selDoubleTournament function implemented in the DEAP library (https://github.com/DEAP/deap/blob/master/deap/tools/selection.py#L106).
+    the selDoubleTournament function implemented in the DEAP library (https://github.com/DEAP/deap/blob/master/deap/tools/selection.py#L106).
 
-     The modification is done in order to deal with individual composed by multiple trees and with the penalty fitness used by the IGP.
+    The modification is done in order to deal with individual composed by multiple trees and with the penalty fitness used by the IGP.
 
     """
-    assert (1 <= parsimony_size <= 2), "Parsimony tournament size has to be in the range [1, 2]."
+    assert 1 <= parsimony_size <= 2, "Parsimony tournament size has to be in the range [1, 2]."
 
     def _sizeTournament(individuals, k, select):
         """
@@ -87,10 +96,10 @@ def selDoubleTournament_IGP(individuals, k, fitness_size, parsimony_size, creato
             if len(individuals) == 1:
                 return random.choice(individuals)
             else:
-                prob = parsimony_size / 2.
+                prob = parsimony_size / 2.0
                 ind1, ind2 = select(individuals, k=2)
 
-                if hasattr(creator, 'SubIndividual') and len(ind1) > 0:
+                if ind1 and isinstance(ind1[0], getattr(creator, "SubIndividual", ())):
                     lind1 = sum([len(gpt) for gpt in ind1])
                     lind2 = sum([len(gpt) for gpt in ind2])
                 else:
@@ -142,8 +151,8 @@ def selDoubleTournament_IGP(individuals, k, fitness_size, parsimony_size, creato
         tfit = partial(_fitTournament)
         return _sizeTournament(individuals, k, tfit)
     else:
-        tsize = partial(_sizeTournament, select=tools.selRandom)
         return _fitTournament(individuals, k)
+
 
 def selBest_IGP(individuals):
     """
@@ -177,7 +186,10 @@ def selBest_IGP(individuals):
                     best = ind
     return best
 
-def InclusiveTournament3D(mu, organized_pop, good_indexes, selected_individuals, fitness_size, parsimony_size, creator):
+
+def InclusiveTournament3D(
+    mu, organized_pop, good_indexes, selected_individuals, fitness_size, parsimony_size, creator
+):
     """
     Author(s): Francesco Marchetti
     email: framarc93@gmail.com
@@ -187,7 +199,7 @@ def InclusiveTournament3D(mu, organized_pop, good_indexes, selected_individuals,
     """
 
     chosen = []
-    exploited = np.zeros((len(good_indexes)))
+    exploited = np.zeros(len(good_indexes))
     j = 0
     count = 0
     while len(chosen) < mu:
@@ -195,22 +207,30 @@ def InclusiveTournament3D(mu, organized_pop, good_indexes, selected_individuals,
             j = 0
         i = good_indexes[j]
 
-        if exploited[j] < len(organized_pop["cat{}_{}_{}".format(i[0], i[1], i[2])]):
-            if len(organized_pop["cat{}_{}_{}".format(i[0], i[1], i[2])]) > 1:
-                selected = selDoubleTournament_IGP(organized_pop["cat{}_{}_{}".format(i[0], i[1], i[2])], selected_individuals, fitness_size,
-                                               parsimony_size, creator, fitness_first=True)
+        if exploited[j] < len(organized_pop[f"cat{i[0]}_{i[1]}_{i[2]}"]):
+            if len(organized_pop[f"cat{i[0]}_{i[1]}_{i[2]}"]) > 1:
+                selected = selDoubleTournament_IGP(
+                    organized_pop[f"cat{i[0]}_{i[1]}_{i[2]}"],
+                    selected_individuals,
+                    fitness_size,
+                    parsimony_size,
+                    creator,
+                    fitness_first=True,
+                )
                 chosen.append(selected)
             else:
-                chosen.append(organized_pop["cat{}_{}_{}".format(i[0], i[1], i[2])][0])
+                chosen.append(organized_pop[f"cat{i[0]}_{i[1]}_{i[2]}"][0])
             exploited[j] += 1
         j += 1
-        #if count > 1e3:
+        # if count > 1e3:
         #    print('stuck infinte loop selection')
-        count+=1
+        count += 1
     return chosen
 
 
-def selDoubleTournament_MGGP(individuals, k, fitness_size, parsimony_size, fitness_first, fit_attr="fitness"):
+def selDoubleTournament_MGGP(
+    individuals, k, fitness_size, parsimony_size, fitness_first, fit_attr="fitness"
+):
     """
     This is a modification of the xselDoubleTournament function from [1] which itself is a modification of
      the selDoubleTournament function implemented in the DEAP library (https://github.com/DEAP/deap/blob/master/deap/tools/selection.py#L106).
@@ -218,7 +238,7 @@ def selDoubleTournament_MGGP(individuals, k, fitness_size, parsimony_size, fitne
      The modification is done in order to deal with individual composed by multiple trees used by the MGGP.
 
     """
-    assert (1 <= parsimony_size <= 2), "Parsimony tournament size has to be in the range [1, 2]."
+    assert 1 <= parsimony_size <= 2, "Parsimony tournament size has to be in the range [1, 2]."
 
     def _sizeTournament(individuals, k, select):
         """
@@ -229,7 +249,7 @@ def selDoubleTournament_MGGP(individuals, k, fitness_size, parsimony_size, fitne
         for i in range(k):
             # Select two individuals from the population
             # The first individual has to be the shortest
-            prob = parsimony_size / 2.
+            prob = parsimony_size / 2.0
             ind1, ind2 = select(individuals, k=2)
 
             lind1 = sum([len(gpt) for gpt in ind1])

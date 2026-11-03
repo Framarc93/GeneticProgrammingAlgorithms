@@ -22,14 +22,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-import numpy as np
-from copy import deepcopy, copy
+from copy import copy, deepcopy
+
 import matplotlib.pyplot as plt
+import numpy as np
+
 from .niches_manipulation import subset_diversity_genotype, subset_diversity_pheno3D_2fit
 
 
-class POP_geno(object):
-    '''
+class POP_geno:
+    """
     Author(s): Francesco Marchetti
     email: framarc93@gmail.com
 
@@ -56,7 +58,7 @@ class POP_geno(object):
     Methods:
         output_stats():
             print the statistics of the considered population
-    '''
+    """
 
     def __init__(self, population, creator, **kwargs):
         self.items = list()
@@ -65,7 +67,7 @@ class POP_geno(object):
         for i in range(len(population)):
             item = deepcopy(population[i])
             self.items.append(item)
-            if hasattr(creator, 'SubIndividual'):
+            if item and isinstance(item[0], getattr(creator, "SubIndividual", ())):
                 self.lens[i] = sum([len(gpt) for gpt in item])
             else:
                 self.lens[i] = len(population[i])
@@ -78,22 +80,40 @@ class POP_geno(object):
         pp_len = pp_len[pp_len != 0]
         self.entropy_len = -sum(pp_len * np.log(pp_len))
 
-
     def output_stats(self, Title):
         print("\n")
-        print("--------------------------- {} STATISTICS --------------------------------".format(Title))
-        print("-- Min len: {}, Max len: {} ---".format(self.min_len, self.max_len))
-        print("-- Entropy len: {0:.3f} -----------------------------".format(self.entropy_len))
-        print("-- Distribution len: {} ------------------------------".format(self.categories_len["distribution"]["percentage"] * 100))
+        print(f"--------------------------- {Title} STATISTICS --------------------------------")
+        print(f"-- Min len: {self.min_len}, Max len: {self.max_len} ---")
+        print(f"-- Entropy len: {self.entropy_len:.3f} -----------------------------")
+        print(
+            "-- Distribution len: {} ------------------------------".format(
+                self.categories_len["distribution"]["percentage"] * 100
+            )
+        )
         print("----------------------------------------------------------------------------")
 
     def save_stats(self, data, path, gen):
-        data = np.vstack((data, [self.min_len, self.max_len, self.entropy_len, self.categories_len["distribution"]["percentage"]]))
-        np.save(path + 'Population_statistics_gen_{}'.format(gen), data)
-        np.save(path + 'Individuals_lengths_gen_{}'.format(gen), self.lens)
+        data, _ = self.retrieve_stats(data, [])
+        np.save(path + f"Population_statistics_gen_{gen}", data)
+        np.save(path + f"Individuals_lengths_gen_{gen}", self.lens)
 
     def retrieve_stats(self, data, lengths):
-        data = np.vstack((data, np.array(([self.min_len, self.max_len, self.entropy_len, self.categories_len["distribution"]["percentage"]]), dtype=object)))
+        data = np.vstack(
+            (
+                data,
+                np.array(
+                    (
+                        [
+                            self.min_len,
+                            self.max_len,
+                            self.entropy_len,
+                            self.categories_len["distribution"]["percentage"],
+                        ]
+                    ),
+                    dtype=object,
+                ),
+            )
+        )
         lengths.append(self.lens)
         return data, lengths
 
@@ -113,8 +133,8 @@ class POP_geno(object):
         return str(self.items)
 
 
-class POP_pheno_3D_2fit(object):
-    '''
+class POP_pheno_3D_2fit:
+    """
     Author(s): Francesco Marchetti
     email: framarc93@gmail.com
 
@@ -141,7 +161,7 @@ class POP_pheno_3D_2fit(object):
     Methods:
         output_stats():
             print the statistics of the considered population
-    '''
+    """
 
     def __init__(self, population, creator, **kwargs):
 
@@ -168,49 +188,76 @@ class POP_pheno_3D_2fit(object):
         self.min_fit_val = min(self.fits_val)
         self.max_fit_val = max(self.fits_val)
 
-        self.categories, self.indexes = subset_diversity_pheno3D_2fit(population, creator, kwargs=kwargs)
+        self.categories, self.indexes = subset_diversity_pheno3D_2fit(
+            population, creator, kwargs=kwargs
+        )
         pp_fit = self.categories["distribution"]["percentage"]
         pp_fit = pp_fit[pp_fit != 0]
         self.entropy = -sum(pp_fit * np.log(pp_fit))
 
     def output_stats(self, Title, cat_number_len, cat_number_fit):
         print("\n")
-        print("--------------------------- {} STATISTICS --------------------------------".format(Title))
-        print("-- Min fit: {}, Max fit: {}, Min len: {}, Max len: {}, Min Fit Val: {}, Max Fit Val: {}---".format(self.min_fit,
-                                                                                                                self.max_fit, self.min_len, self.max_len,
-                                                                                                                self.min_fit_val, self.max_fit_val))
-        print("-- Entropy: {0:.3f} -----------------------------".format(self.entropy))
-        #print("-- Distribution : --")
-        #print(tabulate(np.reshape(self.categories["distribution"]["percentage"] * 100, (cat_number_fit, cat_number_len))))
+        print(f"--------------------------- {Title} STATISTICS --------------------------------")
+        print(
+            f"-- Min fit: {self.min_fit}, Max fit: {self.max_fit}, Min len: {self.min_len}, Max len: {self.max_len}, Min Fit Val: {self.min_fit_val}, Max Fit Val: {self.max_fit_val}---"
+        )
+        print(f"-- Entropy: {self.entropy:.3f} -----------------------------")
+        # print("-- Distribution : --")
+        # print(tabulate(np.reshape(self.categories["distribution"]["percentage"] * 100, (cat_number_fit, cat_number_len))))
 
     def save_stats(self, data, path, gen):
-        data = np.vstack((data, [self.min_fit, self.max_fit, self.min_len, self.max_len, self.entropy,
-                                 self.categories]))
-        np.save(path + 'Population_statistics_gen_{}'.format(gen), data)
-        np.save(path + 'Individuals_lengths_gen_{}'.format(gen), self.lens)
+        data = np.vstack(
+            (
+                data,
+                [
+                    self.min_fit,
+                    self.max_fit,
+                    self.min_len,
+                    self.max_len,
+                    self.entropy,
+                    self.categories,
+                ],
+            )
+        )
+        np.save(path + f"Population_statistics_gen_{gen}", data)
+        np.save(path + f"Individuals_lengths_gen_{gen}", self.lens)
 
     def retrieve_stats(self, data, lengths):
-        data = np.vstack((data, np.array(([self.min_len, self.max_len, self.entropy,
-                                           self.categories["distribution"]["percentage"]]), dtype=object)))
+        data = np.vstack(
+            (
+                data,
+                np.array(
+                    (
+                        [
+                            self.min_len,
+                            self.max_len,
+                            self.entropy,
+                            self.categories["distribution"]["percentage"],
+                        ]
+                    ),
+                    dtype=object,
+                ),
+            )
+        )
         lengths.append(self.lens)
         return data, lengths
 
     def plot_entropy_evol(self, save_path, gen, cat_len, cat_fit, cat_fit_val, fit_scale):
-        #plt.figure(figsize=(5, 5))
-        #len_range = np.linspace(self.min_len, self.max_len, cat_len+1)
-        #fit_range = np.geomspace(self.min_fit, self.max_fit*fit_scale, cat_fit+1)
-        #plt.vlines(x=len_range, ymin=self.min_fit, ymax=self.max_fit*fit_scale, colors='k')
-        #plt.hlines(y=fit_range, xmin=self.min_len, xmax=self.max_len, colors='k')
-        #plt.title('Gen {}'.format(gen))
-        #plt.xlabel('Number of nodes')
-        #plt.ylabel('Fitness')
-        #count = 0
-        #for i in range(len(fit_range)-1):
+        # plt.figure(figsize=(5, 5))
+        # len_range = np.linspace(self.min_len, self.max_len, cat_len+1)
+        # fit_range = np.geomspace(self.min_fit, self.max_fit*fit_scale, cat_fit+1)
+        # plt.vlines(x=len_range, ymin=self.min_fit, ymax=self.max_fit*fit_scale, colors='k')
+        # plt.hlines(y=fit_range, xmin=self.min_len, xmax=self.max_len, colors='k')
+        # plt.title('Gen {}'.format(gen))
+        # plt.xlabel('Number of nodes')
+        # plt.ylabel('Fitness')
+        # count = 0
+        # for i in range(len(fit_range)-1):
         #    for j in range(len(len_range)-1):
         #        plt.plot((len_range[j]+len_range[j+1])/2, (fit_range[i]+fit_range[i+1])/2, 'o', markersize=self.categories['distribution']['percentage'][count]*100, color='r')
         #        count += 1
 
-        ax = plt.figure().add_subplot(projection='3d')
+        ax = plt.figure().add_subplot(projection="3d")
         plt.rcParams["figure.figsize"] = [6, 6]
 
         ax.azim = -134  # y rotation (default=270)
@@ -224,26 +271,54 @@ class POP_pheno_3D_2fit(object):
 
         for fit_val in fit_val_range:
             for fit in fit_range:
-                ax.plot([fit_val, fit_val], [self.min_len, self.max_len], [fit, fit], color='k', linewidth=0.3, alpha=0.3)
+                ax.plot(
+                    [fit_val, fit_val],
+                    [self.min_len, self.max_len],
+                    [fit, fit],
+                    color="k",
+                    linewidth=0.3,
+                    alpha=0.3,
+                )
         for fit_val in fit_val_range:
             for Len in len_range:
-                ax.plot([fit_val, fit_val], [Len, Len], [self.min_fit, q3], color='k', linewidth=0.3, alpha=0.3)
+                ax.plot(
+                    [fit_val, fit_val],
+                    [Len, Len],
+                    [self.min_fit, q3],
+                    color="k",
+                    linewidth=0.3,
+                    alpha=0.3,
+                )
         for fit in fit_range:
             for Len in len_range:
-                ax.plot( [self.min_fit_val, q3_val], [Len, Len], [fit, fit], color='k', linewidth=0.3, alpha=0.3)
+                ax.plot(
+                    [self.min_fit_val, q3_val],
+                    [Len, Len],
+                    [fit, fit],
+                    color="k",
+                    linewidth=0.3,
+                    alpha=0.3,
+                )
         count = 0
-        for i in range(len(fit_range)-1):
-            for j in range(len(len_range)-1):
-                for k in range(len(fit_val_range)-1):
-                    ax.plot((fit_val_range[k]+fit_val_range[k+1])/2, (len_range[j]+len_range[j+1])/2, (fit_range[i]+fit_range[i+1])/2, 'o', markersize=self.categories['distribution']['percentage'][count]*150, color='r')
+        for i in range(len(fit_range) - 1):
+            for j in range(len(len_range) - 1):
+                for k in range(len(fit_val_range) - 1):
+                    ax.plot(
+                        (fit_val_range[k] + fit_val_range[k + 1]) / 2,
+                        (len_range[j] + len_range[j + 1]) / 2,
+                        (fit_range[i] + fit_range[i + 1]) / 2,
+                        "o",
+                        markersize=self.categories["distribution"]["percentage"][count] * 150,
+                        color="r",
+                    )
                     count += 1
-        plt.title('Gen {}'.format(gen))
-        ax.set_xlabel('Validation Fitness')
-        ax.set_ylabel('Length')
-        ax.set_zlabel('Training Fitness')
+        plt.title(f"Gen {gen}")
+        ax.set_xlabel("Validation Fitness")
+        ax.set_ylabel("Length")
+        ax.set_zlabel("Training Fitness")
 
-        #plt.show()
-        plt.savefig(save_path + '/gen_{}.jpg'.format(gen), format='jpg')
+        # plt.show()
+        plt.savefig(save_path + f"/gen_{gen}.jpg", format="jpg")
         plt.close()
 
     def __len__(self):
