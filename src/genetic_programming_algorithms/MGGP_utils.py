@@ -32,28 +32,27 @@ import numpy as np
 
 def lst_matrix_multiple_subInds(ind, evaluate_subtree, evaluate, compile, **kwargs):
 
-    input_train = kwargs['kwargs']['X_train']
-    output_train = kwargs['kwargs']['y_train']
+    input_train = kwargs["kwargs"]["X_train"]
+    output_train = kwargs["kwargs"]["y_train"]
     eqs = []
     for g in range(len(ind)):
-        Y = np.reshape(output_train[g,:], (len(output_train[g,:]), 1))
+        Y = np.reshape(output_train[g, :], (len(output_train[g, :]), 1))
         A = np.ones((len(output_train[g]), len(ind[g]) + 1))
         for i in range(len(ind[g])):
-            A[:, i+1] = evaluate_subtree(ind[g], i, compile, input_train, output_train[g,:])
+            A[:, i + 1] = evaluate_subtree(ind[g], i, compile, input_train, output_train[g, :])
         try:
             c = np.linalg.pinv(A) @ Y
             if np.isnan(c).any() or np.isinf(c).any():
-
                 c = np.zeros(len(ind[g]) + 1)
             c = np.ndarray.flatten(c)
             ind[g].w = c
         except np.linalg.LinAlgError:
-            c = np.zeros(len(ind[g])+1)
+            c = np.zeros(len(ind[g]) + 1)
             ind[g].w = c
 
         eqs.append(build_funcString(c, ind[g]))
 
-    fitnesses = evaluate(eqs, compile, kwargs=kwargs['kwargs'])
+    fitnesses = evaluate(eqs, compile, kwargs=kwargs["kwargs"])
     fitness_train = fitnesses[0]
     fitness_val = fitnesses[2]
 
@@ -62,28 +61,27 @@ def lst_matrix_multiple_subInds(ind, evaluate_subtree, evaluate, compile, **kwar
 
 def lst_matrix_multiple_subInds_noVal(ind, evaluate_subtree, evaluate, compile, **kwargs):
 
-    input_train = kwargs['kwargs']['X_train']
-    output_train = kwargs['kwargs']['y_train']
+    input_train = kwargs["kwargs"]["X_train"]
+    output_train = kwargs["kwargs"]["y_train"]
     eqs = []
     for g in range(len(ind)):
-        Y = np.reshape(output_train[g,:], (len(output_train[g,:]), 1))
+        Y = np.reshape(output_train[g, :], (len(output_train[g, :]), 1))
         A = np.ones((len(output_train[g]), len(ind[g]) + 1))
         for i in range(len(ind[g])):
-            A[:, i+1] = evaluate_subtree(ind[g], i, compile, input_train, output_train[g,:])
+            A[:, i + 1] = evaluate_subtree(ind[g], i, compile, input_train, output_train[g, :])
         try:
             c = np.linalg.pinv(A) @ Y
             if np.isnan(c).any() or np.isinf(c).any():
-
                 c = np.zeros(len(ind[g]) + 1)
             c = np.ndarray.flatten(c)
             ind[g].w = c
         except np.linalg.LinAlgError:
-            c = np.zeros(len(ind[g])+1)
+            c = np.zeros(len(ind[g]) + 1)
             ind[g].w = c
 
         eqs.append(build_funcString(c, ind[g]))
 
-    fitnesses = evaluate(eqs, compile, kwargs=kwargs['kwargs'])
+    fitnesses = evaluate(eqs, compile, kwargs=kwargs["kwargs"])
     fitness_train = fitnesses[0]
 
     return fitness_train, 0.0, ind[0].w, ind[1].w
@@ -91,42 +89,42 @@ def lst_matrix_multiple_subInds_noVal(ind, evaluate_subtree, evaluate, compile, 
 
 def lst_matrix(ind, evaluate_subtree, evaluate, compile, **kwargs):
 
-    input_train = kwargs['kwargs']['X_train']
-    output_train = kwargs['kwargs']['y_train']
+    input_train = kwargs["kwargs"]["X_train"]
+    output_train = kwargs["kwargs"]["y_train"]
 
     Y = np.reshape(output_train, (len(output_train), 1))
     A = np.ones((len(output_train), len(ind) + 1))
     for i in range(len(ind)):
-        A[:, i+1] = evaluate_subtree(ind, i, compile, input_train, output_train)
+        A[:, i + 1] = evaluate_subtree(ind, i, compile, input_train, output_train)
     try:
         c = np.linalg.pinv(A) @ Y
         if np.isnan(c).any() or np.isinf(c).any():
             fitness_train = 1e6
             fitness_val = 1e6
             c = np.zeros(len(ind) + 1)
-            return fitness_train, fitness_val, c
+            return fitness_train, 0.0, fitness_val, 0.0, c
         c = np.ndarray.flatten(c)
         ind.w = c
         eq = build_funcString(c, ind)
-        fitnesses = evaluate(eq, compile, kwargs=kwargs['kwargs'])
+        fitnesses = evaluate(eq, compile, kwargs=kwargs["kwargs"])
         fitness_train = fitnesses[0]
         fitness_val = fitnesses[2]
     except np.linalg.LinAlgError:
         fitness_train = 1e6
         fitness_val = 1e6
-        c = np.zeros(len(ind)+1)
+        c = np.zeros(len(ind) + 1)
     return fitness_train, 0.0, fitness_val, 0.0, c
 
 
 def lst_matrix_noVal(ind, evaluate_subtree, evaluate, compile, **kwargs):
 
-    input_train = kwargs['kwargs']['X_train']
-    output_train = kwargs['kwargs']['y_train']
+    input_train = kwargs["kwargs"]["X_train"]
+    output_train = kwargs["kwargs"]["y_train"]
 
     Y = np.reshape(output_train, (len(output_train), 1))
     A = np.ones((len(output_train), len(ind) + 1))
     for i in range(len(ind)):
-        A[:, i+1] = evaluate_subtree(ind, i, compile, input_train, output_train)
+        A[:, i + 1] = evaluate_subtree(ind, i, compile, input_train, output_train)
     try:
         c = np.linalg.pinv(A) @ Y
         if np.isnan(c).any() or np.isinf(c).any():
@@ -136,12 +134,13 @@ def lst_matrix_noVal(ind, evaluate_subtree, evaluate, compile, **kwargs):
         c = np.ndarray.flatten(c)
         ind.w = c
         eq = build_funcString(c, ind)
-        fitnesses = evaluate(eq, compile, kwargs=kwargs['kwargs'])
+        fitnesses = evaluate(eq, compile, kwargs=kwargs["kwargs"])
         fitness_train = fitnesses[0]
     except np.linalg.LinAlgError:
         fitness_train = 1e6
-        c = np.zeros(len(ind)+1)
+        c = np.zeros(len(ind) + 1)
     return fitness_train, 0.0, c
+
 
 def evaluate_subtree(individual, gene, compile, input_true, output_true):
     f_ind = compile(individual[gene])
@@ -161,6 +160,3 @@ def build_funcString(d, individual):
     del eq[-1]
     eq = "".join(eq)
     return eq
-
-
-

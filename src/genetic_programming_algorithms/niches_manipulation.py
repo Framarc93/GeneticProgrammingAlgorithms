@@ -24,6 +24,7 @@
 
 import numpy as np
 
+
 def subset_feasible(population):
     """
     Author(s): Francesco Marchetti
@@ -54,8 +55,8 @@ def subset_diversity_genotype(population, creator, **kwargs):
 
     for ind in population:
         try:
-            if type(ind[0]) == creator.SubIndividual and len(ind) > 1:
-                lens.append((sum([len(gpt) for gpt in ind])))
+            if isinstance(ind[0], creator.SubIndividual) and len(ind) > 1:
+                lens.append(sum([len(gpt) for gpt in ind]))
             else:
                 lens.append(len(ind))
         except AttributeError:
@@ -64,24 +65,24 @@ def subset_diversity_genotype(population, creator, **kwargs):
     useful_ind = np.linspace(0, len(cat) - 2, len(cat) - 1)
 
     for i in range(len(cat) - 1):
-        categories["cat{}".format(i)] = []
+        categories[f"cat{i}"] = []
     for ind in population:
         for i in range(len(cat) - 1):
             try:
-                if type(ind[0]) == creator.SubIndividual:
+                if isinstance(ind[0], creator.SubIndividual):
                     totLen = sum([len(gpt) for gpt in ind])
                 else:
                     totLen = len(ind)
             except AttributeError:
                 totLen = len(ind)
             if cat[i] <= totLen <= cat[i + 1]:
-                categories["cat{}".format(i)].append(ind)
+                categories[f"cat{i}"].append(ind)
                 break
 
     for i in range(len(cat) - 1):
-        if not categories["cat{}".format(i)]:
+        if not categories[f"cat{i}"]:
             invalid_ind.append(i)
-        distribution.append(len(categories["cat{}".format(i)]))
+        distribution.append(len(categories[f"cat{i}"]))
     distr_stats["individuals"] = distribution
     distr_stats["percentage"] = np.array(distribution) / len(population)
     categories["distribution"] = distr_stats
@@ -100,10 +101,10 @@ def subset_diversity_pheno3D_2fit(population, creator, **kwargs):
     in the population
     """
 
-    cat_number_len = kwargs['kwargs']['configs']["cat_number_len"]
-    cat_number_fit_train = kwargs['kwargs']['configs']["cat_number_fit_train"]
-    cat_number_fit_val = kwargs['kwargs']['configs']["cat_number_fit_val"]
-    fit_scale = kwargs['kwargs']['configs']["fit_scale"]
+    cat_number_len = kwargs["kwargs"]["configs"]["cat_number_len"]
+    cat_number_fit_train = kwargs["kwargs"]["configs"]["cat_number_fit_train"]
+    cat_number_fit_val = kwargs["kwargs"]["configs"]["cat_number_fit_val"]
+    fit_scale = kwargs["kwargs"]["configs"]["fit_scale"]
 
     fits = []
     categories = {}
@@ -117,21 +118,25 @@ def subset_diversity_pheno3D_2fit(population, creator, **kwargs):
         fits_val.append(ind.fitness_validation.values[0])
         lens.append(len(ind))
 
-    fits = np.array((fits))
-    fits_val = np.array((fits_val))
-    lens = np.array((lens))
+    fits = np.array(fits)
+    fits_val = np.array(fits_val)
+    lens = np.array(lens)
 
     upper_fit = np.quantile(fits, fit_scale)
     upper_fit_val = np.quantile(fits_val, fit_scale)
 
-    int_lens = np.linspace(min(lens), max(lens), cat_number_len+1)
-    int_fits = np.geomspace(min(fits), upper_fit, cat_number_fit_train+1)
-    int_fits_val = np.geomspace(min(fits_val), upper_fit_val, cat_number_fit_val+1)
+    int_lens = np.linspace(min(lens), max(lens), cat_number_len + 1)
+    int_fits = (np.geomspace if min(fits) > 0 else np.linspace)(
+        min(fits), upper_fit, cat_number_fit_train + 1
+    )
+    int_fits_val = (np.geomspace if min(fits_val) > 0 else np.linspace)(
+        min(fits_val), upper_fit_val, cat_number_fit_val + 1
+    )
 
     for i in range(cat_number_fit_train):
         for j in range(cat_number_len):
             for k in range(cat_number_fit_val):
-                categories["cat{}_{}_{}".format(i, j, k)] = []
+                categories[f"cat{i}_{j}_{k}"] = []
 
     for ind in population:
         break_out_flag = False
@@ -144,11 +149,11 @@ def subset_diversity_pheno3D_2fit(population, creator, **kwargs):
                     if int_lens[j] <= ind_len <= int_lens[j + 1]:
                         for k in range(cat_number_fit_val):
                             if k == cat_number_fit_val - 1:
-                                categories['cat{}_{}_{}'.format(i, j, k)].append(ind)
+                                categories[f"cat{i}_{j}_{k}"].append(ind)
                                 break_out_flag = True
                                 break
                             elif int_fits_val[k] <= fit_val <= int_fits_val[k + 1]:
-                                categories['cat{}_{}_{}'.format(i, j, k)].append(ind)
+                                categories[f"cat{i}_{j}_{k}"].append(ind)
                                 break_out_flag = True
                                 break
                         if break_out_flag is True:
@@ -160,11 +165,11 @@ def subset_diversity_pheno3D_2fit(population, creator, **kwargs):
                     if int_lens[j] <= ind_len <= int_lens[j + 1]:
                         for k in range(cat_number_fit_val):
                             if k == cat_number_fit_val - 1:
-                                categories['cat{}_{}_{}'.format(i, j, k)].append(ind)
+                                categories[f"cat{i}_{j}_{k}"].append(ind)
                                 break_out_flag = True
                                 break
                             elif int_fits_val[k] <= fit_val <= int_fits_val[k + 1]:
-                                categories['cat{}_{}_{}'.format(i, j, k)].append(ind)
+                                categories[f"cat{i}_{j}_{k}"].append(ind)
                                 break_out_flag = True
                                 break
                         if break_out_flag is True:
@@ -175,13 +180,12 @@ def subset_diversity_pheno3D_2fit(population, creator, **kwargs):
     for i in range(cat_number_fit_train):
         for j in range(cat_number_len):
             for k in range(cat_number_fit_val):
-                if categories["cat{}_{}_{}".format(i, j, k)]:
+                if categories[f"cat{i}_{j}_{k}"]:
                     useful_ind.append([i, j, k])
-                distribution.append(len(categories["cat{}_{}_{}".format(i, j, k)]))
+                distribution.append(len(categories[f"cat{i}_{j}_{k}"]))
 
     distr_stats["individuals"] = distribution
     distr_stats["percentage"] = np.array(distribution) / len(population)
     categories["distribution"] = distr_stats
 
     return categories, np.asarray(useful_ind, dtype=int)
-

@@ -22,13 +22,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+import random
 from copy import deepcopy
 from operator import eq
-import random
+
 import numpy as np
 
 
-class HallOfFame_modified(object):
+class HallOfFame_modified:
     """
     Modified HallOfFame class taken from the DEAP library
     (https://github.com/DEAP/deap/blob/master/deap/tools/support.py#L488).
@@ -44,7 +45,6 @@ class HallOfFame_modified(object):
             2 - if for_feasible is False, the sum of both fitness is considered and the ones with the lowest sum
                 are inserted
     """
-
 
     def __init__(self, maxsize, similar=eq):
         self.maxsize = maxsize
@@ -70,17 +70,21 @@ class HallOfFame_modified(object):
         :param population: A list of individual with a fitness attribute to
                            update the hall of fame with.
         """
+        if self.maxsize == 0:
+            return
         if len(self) == 0 and self.maxsize != 0 and len(population) > 0:
             # Working on an empty hall of fame is problematic for the
             # "for else"
             self.insert(population[0], for_feasible)
 
-        if for_feasible is True:                                                                                 # Modified part
+        if for_feasible is True:  # Modified part
             for ind in population:
-
-                if ind.fitness.values[-1] == 0.0:                                                                # Modified part
-                    if self[0].fitness.values[-1] == 0.0:                                                        # Modified part
-                        if sum(ind.fitness.wvalues) > sum(self[0].fitness.wvalues) or len(self) < self.maxsize:  # Modified part
+                if ind.fitness.values[-1] == 0.0:  # Modified part
+                    if self[0].fitness.values[-1] == 0.0:  # Modified part
+                        if (
+                            sum(ind.fitness.wvalues) > sum(self[0].fitness.wvalues)
+                            or len(self) < self.maxsize
+                        ):  # Modified part
                             for hofer in self:
                                 # Loop through the hall of fame to check for any
                                 # similar individual
@@ -90,7 +94,7 @@ class HallOfFame_modified(object):
                                 # The individual is unique and strictly better than
                                 # the worst
                                 if len(self) >= self.maxsize:
-                                    self.remove(0)                                                               # Modified part
+                                    self.remove(0)  # Modified part
                                 self.insert(ind, for_feasible)
                     else:
                         for hofer in self:
@@ -105,7 +109,9 @@ class HallOfFame_modified(object):
                                 self.remove(0)
                             self.insert(ind, for_feasible)
 
-                elif (sum(ind.fitness.values) < sum(self[0].fitness.values)) or len(self) < self.maxsize:        # Modified part
+                elif (sum(ind.fitness.values) < sum(self[0].fitness.values)) or len(
+                    self
+                ) < self.maxsize:  # Modified part
                     for hofer in self:
                         # Loop through the hall of fame to check for any
                         # similar individual
@@ -115,12 +121,15 @@ class HallOfFame_modified(object):
                         # The individual is unique and strictly better than
                         # the worst
                         if len(self) >= self.maxsize:
-                            self.remove(0)                                                                      # Modified part
+                            self.remove(0)  # Modified part
                         self.insert(ind, for_feasible)
 
-        else:                                                                                                   # Modified part
-            for ind in population:                                                                              # Modified part
-                if sum(ind.fitness.wvalues) > sum(self[0].fitness.wvalues) or len(self) < self.maxsize:
+        else:  # Modified part
+            for ind in population:  # Modified part
+                if (
+                    sum(ind.fitness.wvalues) > sum(self[0].fitness.wvalues)
+                    or len(self) < self.maxsize
+                ):
                     for hofer in self:
                         # Loop through the hall of fame to check for any
                         # similar individual
@@ -130,7 +139,7 @@ class HallOfFame_modified(object):
                         # The individual is unique and strictly better than
                         # the worst
                         if len(self) >= self.maxsize:
-                            self.remove(0)                                                                     # Modified part
+                            self.remove(0)  # Modified part
                         self.insert(ind, for_feasible)
 
     def insert(self, item, for_feasible):
@@ -156,13 +165,13 @@ class HallOfFame_modified(object):
             """
 
             if lo < 0:
-                raise ValueError('lo must be non-negative')
+                raise ValueError("lo must be non-negative")
             if hi is None:
                 hi = len(a)
             while lo < hi:
                 mid = (lo + hi) // 2
-                '''must indentify 4 cases: if both are feasible, if the new is feasible and the one in the list is not, 
-                viceversa and if both are infeasible'''
+                """must indentify 4 cases: if both are feasible, if the new is feasible and the one in the list is not,
+                viceversa and if both are infeasible"""
                 if for_feasible is True:
                     # 1st case: both are feasible
                     if x.values[-1] == 0 and a[mid].values[-1] == 0:

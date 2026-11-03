@@ -28,10 +28,10 @@ References:
 [2] https://sites.google.com/site/gptips4matlab/
 """
 
-
-from deap import gp
 import random
 from copy import deepcopy
+
+from deap import gp
 
 
 def xmateMultiple(ind1, ind2):
@@ -72,7 +72,7 @@ def xmate_MGGP(ind1, ind2, NgenesMax, stdCxpb):
         ch2end = random.randint(ch2start, len(ind2) - 1)
         from_ind1 = deepcopy([ind1[ch1start]])
         if ch1end != ch1start:
-            n = ch1start+1
+            n = ch1start + 1
             while n <= ch1end:
                 from_ind1.append(deepcopy(ind1[n]))
                 n += 1
@@ -83,21 +83,21 @@ def xmate_MGGP(ind1, ind2, NgenesMax, stdCxpb):
                 from_ind2.append(deepcopy(ind2[n]))
                 n += 1
         if ch1start != ch1end:
-            for i in range(ch1end-ch1start+1):
+            for i in range(ch1end - ch1start + 1):
                 del ind1[ch1start]
         else:
             del ind1[ch1start]
         ind1[ch1start:ch1start] = deepcopy(from_ind2)
         if ch2start != ch2end:
-            for i in range(ch2end-ch2start+1):
+            for i in range(ch2end - ch2start + 1):
                 del ind2[ch2start]
         else:
             del ind2[ch2start]
         ind2[ch2start:ch2start] = deepcopy(from_ind1)
         while len(ind1) > NgenesMax:
-            del ind1[random.randint(0, len(ind1)-1)]
+            del ind1[random.randint(0, len(ind1) - 1)]
         while len(ind2) > NgenesMax:
-            del ind2[random.randint(0, len(ind2)-1)]
+            del ind2[random.randint(0, len(ind2) - 1)]
 
     return ind1, ind2
 

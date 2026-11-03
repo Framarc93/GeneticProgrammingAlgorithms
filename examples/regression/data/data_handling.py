@@ -26,18 +26,19 @@
 This file contains the function used to retrieve the data for the regression application
 """
 
-
-from pmlb import fetch_data
-import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
 import os
+
+import pandas as pd
+from pmlb import fetch_data
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 # Base folder: where the script lives
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
 def retrieve_dataset_pmlb(bench):
-    '''
+    """
     Author(s): Francesco Marchetti
     email: framarc93@gmail.com
 
@@ -46,9 +47,9 @@ def retrieve_dataset_pmlb(bench):
     Attributes:
         bench: string
             Name of the dataset to download
-    '''
+    """
 
-    if os.path.exists(BASE_DIR + "/{}_shuffled.csv".format(bench)):
+    if os.path.exists(BASE_DIR + f"/{bench}_shuffled.csv"):
         # if the file of the shuffled dataset already exist, then do nothing.
         return
     else:
@@ -59,12 +60,12 @@ def retrieve_dataset_pmlb(bench):
         shuffled = data.sample(frac=1)
 
         # save the dataset to csv
-        shuffled.to_csv(BASE_DIR + '/{}_shuffled.csv'.format(bench), index=False)
+        shuffled.to_csv(BASE_DIR + f"/{bench}_shuffled.csv", index=False)
         return
 
 
 def select_testcase(bench, test_perc, val_perc, dataset_path):
-    '''
+    """
     Author(s): Francesco Marchetti
     email: framarc93@gmail.com
 
@@ -78,30 +79,37 @@ def select_testcase(bench, test_perc, val_perc, dataset_path):
             percentage of data to use for test
         val_perc: float
             percentage of data to use for validation
-    '''
+    """
 
-    df = pd.read_csv(dataset_path + '/{}_shuffled.csv'.format(bench))
-    scaler = MinMaxScaler()
-    data = pd.DataFrame(scaler.fit_transform(df), columns=df.columns)
-
-    input = data.iloc[:, :-1]
-    target = data.iloc[:, -1]
-    terminals = len(data.columns) - 1
-    input_train, X_test, target_train, y_test = train_test_split(input, target, test_size=test_perc)
-
-    if val_perc == 0.0:
-        X_train, y_train = input_train, target_train
-        X_val, y_val = X_test, y_test
+    df = pd.read_csv(dataset_path + f"/{bench}_shuffled.csv")
+    train, test = train_test_split(df, test_size=test_perc)
+    if val_perc:
+        train, validation = train_test_split(train, test_size=val_perc)
     else:
-        # Use the same function above for the validation set
-        X_train, X_val, y_train, y_val = train_test_split(input_train, target_train, test_size=val_perc)
+        validation = test
+    scaler = MinMaxScaler().fit(train)
+    train = pd.DataFrame(scaler.transform(train), columns=df.columns)
+    test = pd.DataFrame(scaler.transform(test), columns=df.columns)
+    validation = pd.DataFrame(scaler.transform(validation), columns=df.columns)
+    terminals = len(df.columns) - 1
+    X_train, y_train = train.iloc[:, :-1], train.iloc[:, -1]
+    X_val, y_val = validation.iloc[:, :-1], validation.iloc[:, -1]
+    X_test, y_test = test.iloc[:, :-1], test.iloc[:, -1]
 
-    print("X_train shape: {}".format(X_train.shape))
-    print("y_train shape: {}".format(y_train.shape))
-    print("X_test shape: {}".format(X_test.shape))
-    print("y_test shape: {}".format(y_test.shape))
-    print("X_val shape: {}".format(X_val.shape))
-    print("y val shape: {}".format(y_val.shape))
+    print(f"X_train shape: {X_train.shape}")
+    print(f"y_train shape: {y_train.shape}")
+    print(f"X_test shape: {X_test.shape}")
+    print(f"y_test shape: {y_test.shape}")
+    print(f"X_val shape: {X_val.shape}")
+    print(f"y val shape: {y_val.shape}")
 
-    return (terminals, X_train.values.T, y_train.values.T, X_val.values.T,
-            y_val.values.T, X_test.values.T, y_test.values.T, scaler)
+    return (
+        terminals,
+        X_train.values.T,
+        y_train.values.T,
+        X_val.values.T,
+        y_val.values.T,
+        X_test.values.T,
+        y_test.values.T,
+        scaler,
+    )

@@ -22,14 +22,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-from .niches_manipulation import subset_feasible
-from copy import copy, deepcopy
 import random
+from copy import copy, deepcopy
+
 import numpy as np
+
+from .niches_manipulation import subset_feasible
 from .selection_functions import selBest_IGP
 
 
-def varOr_IGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb, mutpb, verbose, cx_lim):
+def varOr_IGP(
+    population, toolbox, lambda_, sub_div, good_indexes_original, cxpb, mutpb, verbose, cx_lim
+):
     """
     Function to perform crossover,mutation or reproduction operations. This is a modified version of the varOr function from DEAP
     library (https://github.com/DEAP/deap/blob/master/deap/algorithms.py#L192C1-L192C54).
@@ -55,7 +59,8 @@ def varOr_IGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb
             size limit used to accept or not the mutation performed on an individual
     """
     assert (round(cxpb, 2) + round(mutpb, 2)) == 1.0, (
-        "The sum of the crossover and mutation probabilities must be equal to 1.0. The best individual is always passsed")
+        "The sum of the crossover and mutation probabilities must be equal to 1.0. The best individual is always passsed"
+    )
 
     offspring = []
 
@@ -67,7 +72,7 @@ def varOr_IGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb
     # if no feasible individuals are found, keep the mutation rate high to explore the search space
     if sub_pop == []:
         if verbose is True:
-            print("Exploring for feasible individuals. Mutpb: {}, Cxpb:{}".format(mutpb, cxpb))
+            print(f"Exploring for feasible individuals. Mutpb: {mutpb}, Cxpb:{cxpb}")
     else:
         # if feasible individuals are found, start decreasing the mutation rate and increasing the crossover rate, to improve exploitation
         if cxpb < cx_lim:
@@ -75,9 +80,10 @@ def varOr_IGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb
             cxpb = cxpb + 0.01
 
         if verbose is True:
-            print("{}/{} ({}%) FEASIBLE INDIVIDUALS".format(len_subpop, len(population),
-                                                            round(len(sub_pop) / len(population) * 100, 2)))
-            print("Mutpb: {}, Cxpb:{}".format(mutpb, cxpb))
+            print(
+                f"{len_subpop}/{len(population)} ({round(len(sub_pop) / len(population) * 100, 2)}%) FEASIBLE INDIVIDUALS"
+            )
+            print(f"Mutpb: {mutpb}, Cxpb:{cxpb}")
             print("\n")
 
     # assign indexes of filled niches
@@ -88,7 +94,7 @@ def varOr_IGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb
         op_choice = random.random()
         if op_choice < cxpb:  # Apply crossover
             # selection of 2 different niches for crossover
-            cat = np.zeros((2))
+            cat = np.zeros(2)
             for i in range(2):
                 if not good_list:
                     good_list = list(good_indexes)
@@ -96,14 +102,20 @@ def varOr_IGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb
                 cat[i] = used
                 good_list.remove(used)
             # select best individual from first niche and random one from the second
-            ind1, ind2 = map(toolbox.clone, [selBest_IGP(sub_div["cat{}".format(int(cat[0]))]),
-                                             random.choice(sub_div["cat{}".format(int(cat[1]))])])
+            ind1, ind2 = map(
+                toolbox.clone,
+                [
+                    selBest_IGP(sub_div[f"cat{int(cat[0])}"]),
+                    random.choice(sub_div[f"cat{int(cat[1])}"]),
+                ],
+            )
             tries = 0
-            while sum(ind1.fitness.values) == sum(
-                    ind2.fitness.values) and tries < 10:  # if the same individual is selected, then repeat the niches selection
+            while (
+                sum(ind1.fitness.values) == sum(ind2.fitness.values) and tries < 10
+            ):  # if the same individual is selected, then repeat the niches selection
                 # process for a maximum of 10 times
                 # selection of 2 different niches for crossover
-                cat = np.zeros((2))
+                cat = np.zeros(2)
                 for i in range(2):
                     if not good_list:
                         good_list = list(good_indexes)
@@ -111,8 +123,13 @@ def varOr_IGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb
                     cat[i] = used
                     good_list.remove(used)
                 # select best individual from first niche and random one from the second
-                ind1, ind2 = map(toolbox.clone, [selBest_IGP(sub_div["cat{}".format(int(cat[0]))]),
-                                                 random.choice(sub_div["cat{}".format(int(cat[1]))])])
+                ind1, ind2 = map(
+                    toolbox.clone,
+                    [
+                        selBest_IGP(sub_div[f"cat{int(cat[0])}"]),
+                        random.choice(sub_div[f"cat{int(cat[1])}"]),
+                    ],
+                )
                 tries += 1
             # perform crossover on selected individuals
             ind1, ind2 = toolbox.mate(ind1, ind2)
@@ -127,15 +144,17 @@ def varOr_IGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb
             used = random.choice(good_list)
             cat = used
             good_list.remove(used)
-            ind = toolbox.clone(random.choice(sub_div["cat{}".format(int(cat))]))
-            ind, = toolbox.mutate(ind)
+            ind = toolbox.clone(random.choice(sub_div[f"cat{int(cat)}"]))
+            (ind,) = toolbox.mutate(ind)
             del ind.fitness.values
             offspring.append(ind)
 
     return offspring, len_subpop, mutpb, cxpb
 
 
-def varOr_FIGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxpb, mutpb, verbose, cx_lim):
+def varOr_FIGP(
+    population, toolbox, lambda_, sub_div, good_indexes_original, cxpb, mutpb, verbose, cx_lim
+):
     """
     Function to perform crossover,mutation or reproduction operations. This is a modified version of the varOr function from DEAP
     library (https://github.com/DEAP/deap/blob/master/deap/algorithms.py#L192C1-L192C54).
@@ -161,8 +180,8 @@ def varOr_FIGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxp
             size limit used to accept or not the mutation performed on an individual
     """
     assert (cxpb + mutpb) == 1.0, (
-        "The sum of the crossover and mutation probabilities must be smaller "
-        "or equal to 1.0.")
+        "The sum of the crossover and mutation probabilities must be smaller or equal to 1.0."
+    )
 
     offspring = []
 
@@ -174,7 +193,7 @@ def varOr_FIGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxp
     # if no feasible individuals are found, keep the mutation rate high to explore the search space
     if sub_pop == []:
         if verbose is True:
-            print("Exploring for feasible individuals. Mutpb: {}, Cxpb:{}".format(mutpb, cxpb))
+            print(f"Exploring for feasible individuals. Mutpb: {mutpb}, Cxpb:{cxpb}")
     else:
         # if feasible individuals are found, start decreasing the mutation rate and increasing the crossover rate, to improve exploitation
         if cxpb < cx_lim:
@@ -182,9 +201,10 @@ def varOr_FIGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxp
             cxpb = cxpb + 0.01
 
         if verbose is True:
-            print("{}/{} ({}%) FEASIBLE INDIVIDUALS".format(len_subpop, len(population),
-                                                        round(len(sub_pop) / len(population) * 100, 2)))
-            print("Mutpb: {}, Cxpb:{}".format(mutpb, cxpb))
+            print(
+                f"{len_subpop}/{len(population)} ({round(len(sub_pop) / len(population) * 100, 2)}%) FEASIBLE INDIVIDUALS"
+            )
+            print(f"Mutpb: {mutpb}, Cxpb:{cxpb}")
             print("\n")
 
     np.random.shuffle(good_indexes_original)
@@ -193,25 +213,36 @@ def varOr_FIGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxp
 
     while len(offspring) < lambda_:
         op_choice = random.random()
-        if op_choice < cxpb:                                                                        # Apply crossover
+        if op_choice < cxpb:  # Apply crossover
             # selection of 2 different niches for crossover. The search is performed in the 3d space
-            cat = np.zeros((2))
-            idxs = np.zeros((2,3))
+            cat = np.zeros(2)
+            idxs = np.zeros((2, 3))
             for i in range(2):
                 if len(good_list) == 0:
                     good_list = copy(good_indexes)
                 used = random.choice(range(len(good_list)))
                 cat[i] = used
-                idxs[i] = good_list[used,:]
+                idxs[i] = good_list[used, :]
                 good_list = np.delete(good_list, used, 0)
             # select random individuals from first and second niches
-            ind1, ind2 = map(toolbox.clone, [random.choice(sub_div["cat{}_{}_{}".format(int(idxs[0][0]), int(idxs[0][1]), int(idxs[0][2]))]),
-                                             random.choice(sub_div["cat{}_{}_{}".format(int(idxs[1][0]), int(idxs[1][1]), int(idxs[1][2]))])])
+            ind1, ind2 = map(
+                toolbox.clone,
+                [
+                    random.choice(
+                        sub_div[f"cat{int(idxs[0][0])}_{int(idxs[0][1])}_{int(idxs[0][2])}"]
+                    ),
+                    random.choice(
+                        sub_div[f"cat{int(idxs[1][0])}_{int(idxs[1][1])}_{int(idxs[1][2])}"]
+                    ),
+                ],
+            )
             tries = 0
-            while sum(ind1.fitness.values) == sum(ind2.fitness.values) and tries < 10: # if the same individual is selected, then repeat the niches selection
-                                                                                       # process for a maximum of 10 times
+            while (
+                sum(ind1.fitness.values) == sum(ind2.fitness.values) and tries < 10
+            ):  # if the same individual is selected, then repeat the niches selection
+                # process for a maximum of 10 times
                 # selection of 2 different niches for crossover
-                cat = np.zeros((2))
+                cat = np.zeros(2)
                 idxs = np.zeros((2, 3))
                 for i in range(2):
                     if len(good_list) == 0:
@@ -221,9 +252,17 @@ def varOr_FIGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxp
                     idxs[i] = good_list[used, :]
                     good_list = np.delete(good_list, used, 0)
                 # select random individuals from first and second niches
-                ind1, ind2 = map(toolbox.clone, [
-                    random.choice(sub_div["cat{}_{}_{}".format(int(idxs[0][0]), int(idxs[0][1]), int(idxs[0][2]))]),
-                    random.choice(sub_div["cat{}_{}_{}".format(int(idxs[1][0]), int(idxs[1][1]), int(idxs[1][2]))])])
+                ind1, ind2 = map(
+                    toolbox.clone,
+                    [
+                        random.choice(
+                            sub_div[f"cat{int(idxs[0][0])}_{int(idxs[0][1])}_{int(idxs[0][2])}"]
+                        ),
+                        random.choice(
+                            sub_div[f"cat{int(idxs[1][0])}_{int(idxs[1][1])}_{int(idxs[1][2])}"]
+                        ),
+                    ],
+                )
                 tries += 1
             # perform crossover on selected individuals
             ind1, ind2 = toolbox.mate(ind1, ind2)
@@ -232,14 +271,16 @@ def varOr_FIGP(population, toolbox, lambda_, sub_div, good_indexes_original, cxp
             if len(offspring) < lambda_:
                 del ind2.fitness.values
                 offspring.append(ind2)
-        else:                                                                                       # Apply mutation
+        else:  # Apply mutation
             if len(good_list) == 0:
                 good_list = copy(good_indexes)
             used = random.choice(range(len(good_list)))
             idxs = good_list[used, :]
             good_list = np.delete(good_list, used, 0)
-            ind = toolbox.clone(random.choice(sub_div["cat{}_{}_{}".format(int(idxs[0]), int(idxs[1]), int(idxs[2]))]))
-            ind, = toolbox.mutate(ind)
+            ind = toolbox.clone(
+                random.choice(sub_div[f"cat{int(idxs[0])}_{int(idxs[1])}_{int(idxs[2])}"])
+            )
+            (ind,) = toolbox.mutate(ind)
             del ind.fitness.values
             offspring.append(ind)
 
@@ -256,13 +297,13 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
         - pass the best of the 2 children produced during crossover
     """
     assert (cxpb + mutpb) <= 1.0, (
-        "The sum of the crossover and mutation probabilities must be smaller "
-        "or equal to 1.0.")
+        "The sum of the crossover and mutation probabilities must be smaller or equal to 1.0."
+    )
 
     offspring = []
     while len(offspring) < lambda_:
         op_choice = random.random()
-        if op_choice < cxpb:            # Apply crossover
+        if op_choice < cxpb:  # Apply crossover
             ind1, ind2 = map(toolbox.clone, random.sample(population, 2))
             ind1, ind2 = deepcopy(toolbox.mate(ind1, ind2))
             if sum(ind1.fitness.wvalues) > sum(ind2.fitness.wvalues):
@@ -273,10 +314,10 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
                 offspring.append(ind2)
         elif op_choice < cxpb + mutpb:  # Apply mutation
             ind = toolbox.clone(random.choice(population))
-            ind, = deepcopy(toolbox.mutate(ind))
+            (ind,) = deepcopy(toolbox.mutate(ind))
             del ind.fitness.values
             offspring.append(ind)
-        else:                           # Apply reproduction
+        else:  # Apply reproduction
             offspring.append(random.choice(population))
 
     return offspring

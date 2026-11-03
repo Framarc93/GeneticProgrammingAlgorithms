@@ -30,6 +30,7 @@ References:
 """
 
 import random
+
 from deap import gp
 
 
@@ -38,49 +39,26 @@ def xmutMultiple(ind, expr, unipb, shrpb, inspb, pset, creator):
     From [1] and modified. Added several mutations possibilities.
     """
     choice = random.random()
-    try:
-        if type(ind[0]) == creator.SubIndividual and len(ind) > 1:
-            for i in range(len(ind)):
-                if choice < unipb:
-                    indx1 = gp.mutUniform(ind[i], expr, pset=pset)
-                    ind[i] = indx1[0]
-                elif unipb <= choice < unipb + shrpb:
-                    indx1 = gp.mutShrink(ind[i])
-                    ind[i] = indx1[0]
-                elif unipb + shrpb <= choice < unipb + shrpb + inspb:
-                    indx1 = gp.mutInsert(ind[i], pset=pset)
-                    ind[i] = indx1[0]
-                else:
-                    choice2 = random.random()
-                    if choice2 < 0.5:
-                        indx1 = gp.mutEphemeral(ind[i], "all")
-                        ind[i] = indx1[0]
-                    else:
-                        indx1 = gp.mutEphemeral(ind[i], "one")
-                        ind[i] = indx1[0]
-    except AttributeError:
+
+    def mutate(tree):
         if choice < unipb:
-            indx1 = gp.mutUniform(ind, expr, pset=pset)
-            ind = indx1[0]
-        elif unipb <= choice < unipb + shrpb:
-            indx1 = gp.mutShrink(ind)
-            ind = indx1[0]
-        elif unipb + shrpb <= choice < unipb + shrpb + inspb:
-            indx1 = gp.mutInsert(ind, pset=pset)
-            ind = indx1[0]
-        else:
-            choice2 = random.random()
-            if choice2 < 0.5:
-                indx1 = gp.mutEphemeral(ind, "all")
-                ind = indx1[0]
-            else:
-                indx1 = gp.mutEphemeral(ind, "one")
-                ind = indx1[0]
-    return ind,
+            return gp.mutUniform(tree, expr, pset=pset)[0]
+        if choice < unipb + shrpb:
+            return gp.mutShrink(tree)[0]
+        if choice < unipb + shrpb + inspb:
+            return gp.mutInsert(tree, pset=pset)[0]
+        return gp.mutEphemeral(tree, "all" if random.random() < 0.5 else "one")[0]
+
+    if ind and isinstance(ind[0], getattr(creator, "SubIndividual", ())):
+        for i, tree in enumerate(ind):
+            ind[i] = mutate(tree)
+    else:
+        ind = mutate(ind)
+    return (ind,)
 
 
 def xmut_MGGP(ind, expr, pset, unipb, nodepb):
-    ch = random.randint(0, len(ind)-1)
+    ch = random.randint(0, len(ind) - 1)
     choice = random.random()
     if choice < unipb:
         indx1 = gp.mutUniform(ind[ch], expr=expr, pset=pset)
@@ -89,13 +67,14 @@ def xmut_MGGP(ind, expr, pset, unipb, nodepb):
         indx1 = gp.mutNodeReplacement(ind[ch], pset=pset)
         ind[ch] = indx1[0]
     else:
-        indx1 = gp.mutEphemeral(ind[ch], mode='one')
+        indx1 = gp.mutEphemeral(ind[ch], mode="one")
         ind[ch] = indx1[0]
-    return ind,
+    return (ind,)
+
 
 def xmut_MGGP_multiple(ind, expr, pset, unipb, nodepb):
     for i in range(len(ind)):
-        ch = random.randint(0, len(ind[i])-1)
+        ch = random.randint(0, len(ind[i]) - 1)
         choice = random.random()
         if choice < unipb:
             indx1 = gp.mutUniform(ind[i][ch], expr=expr, pset=pset)
@@ -104,6 +83,6 @@ def xmut_MGGP_multiple(ind, expr, pset, unipb, nodepb):
             indx1 = gp.mutNodeReplacement(ind[i][ch], pset=pset)
             ind[i][ch] = indx1[0]
         else:
-            indx1 = gp.mutEphemeral(ind[i][ch], mode='one')
+            indx1 = gp.mutEphemeral(ind[i][ch], mode="one")
             ind[i][ch] = indx1[0]
-    return ind,
+    return (ind,)

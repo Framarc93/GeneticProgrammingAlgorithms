@@ -24,30 +24,53 @@
 
 """Collection of primitive functions used for the genetic programming evaluation"""
 
-import numpy as np
 import operator
 
-def lf(x): return 1 / (1 + np.exp(-x))
+import numpy as np
 
-def posTanh(x): return abs(np.tanh(x))
 
-def posSub(x, y): return abs(x-y)
+def lf(x):
+    return 1 / (1 + np.exp(-x))
 
-def posTriAdd(x, y, z): return abs(x + y + z)
 
-def TriAdd(x, y, z): return x + y + z
+def posTanh(x):
+    return abs(np.tanh(x))
 
-def TriMul(x, y, z): return x * y * z
 
-def posAdd(x, y): return abs(x+y)
+def posSub(x, y):
+    return abs(x - y)
 
-def posMul(x, y): return abs(x*y)
 
-def Identity(x): return x
+def posTriAdd(x, y, z):
+    return abs(x + y + z)
 
-def Neg(x): return -x
 
-def Abs(x): return abs(x)
+def TriAdd(x, y, z):
+    return x + y + z
+
+
+def TriMul(x, y, z):
+    return x * y * z
+
+
+def posAdd(x, y):
+    return abs(x + y)
+
+
+def posMul(x, y):
+    return abs(x * y)
+
+
+def Identity(x):
+    return x
+
+
+def Neg(x):
+    return -x
+
+
+def Abs(x):
+    return abs(x)
 
 
 def Div(x, y):
@@ -56,11 +79,21 @@ def Div(x, y):
     except ZeroDivisionError:
         return 0
 
+
 def Mul(left, right):
     try:
         return left * right
-    except (RuntimeError, RuntimeWarning, TypeError, ArithmeticError, BufferError, BaseException, NameError, ValueError,
-            FloatingPointError, OverflowError):
+    except (
+        RuntimeError,
+        RuntimeWarning,
+        TypeError,
+        ArithmeticError,
+        BufferError,
+        NameError,
+        ValueError,
+        FloatingPointError,
+        OverflowError,
+    ):
         return left
 
 
@@ -77,55 +110,24 @@ def ModSqrt(x):
     # Compute the square root
     return np.sqrt(x)
 
+
 def ModLog(x):
-    if type(x) == int:
-        x = float(x)
-    if type(x) != float and type(x) != np.float64:
-        id = np.where(x <= 0)
-        x[id] = 1e-300
-        return np.log(x)
-    else:
-        if x>0:
-            return np.log(x)
-        else:
-            return np.log(1e-300)
+    """Protected logarithm without modifying the caller's data."""
+    return np.log(np.maximum(np.asarray(x, dtype=float), 1e-300))
 
 
 def ModExp(x):
-    if type(x) == int:
-        x = float(x)
-    if type(x) != float and type(x) != np.float64:
-        id1 = np.where(x>100)
-        x[id1] = 100
-        id2 = np.where(x<-100)
-        x[id2] = -100
-        return np.exp(x)
-    else:
-        if -100<=x<=100:
-            return np.exp(x)
-        else:
-            if x>0:
-                return np.exp(100)
-            else:
-                return np.exp(-100)
+    """Exponentiate within finite bounds without modifying inputs."""
+    return np.exp(np.clip(np.asarray(x, dtype=float), -100, 100))
+
 
 def Square(x):
-    if type(x) == int:
-        x = float(x)
-    if type(x) != float and type(x) != np.float64 and type(x) != int:
-        id1 = np.where(x>1e150)
-        x[id1] = 1e150
-        id2 = np.where(x<-1e150)
-        x[id2] = -1e150
-        return x ** 2
-    else:
-        if -1e150<=x<=1e150:
-            return x ** 2
-        else:
-            return 1e150 ** 2
+    """Square within finite bounds without modifying inputs."""
+    return np.square(np.clip(np.asarray(x, dtype=float), -1e150, 1e150))
+
 
 def tanh_der(x):
-    return 1-np.tanh(x)**2
+    return 1 - np.tanh(x) ** 2
 
 
 def create_primitive_set(pset, primitives_list):
