@@ -19,6 +19,11 @@ def evaluate_regression(individual, compile, **kwargs):
     fitness_train = np.sqrt(sum(err_train**2) / (len(err_train)))
     fitness_val = np.sqrt(sum(err_val**2) / (len(err_val)))
 
+    if not np.isfinite(fitness_train):
+        fitness_train = 1e10
+    if not np.isfinite(fitness_val):
+        fitness_val = 1e10
+
     return fitness_train, 0.0, fitness_val, 0.0
 
 
@@ -33,5 +38,8 @@ def evaluate_regression_noVal(individual, compile, **kwargs):
     err_train = y_train - pred_train
 
     fitness_train = np.sqrt(sum(err_train**2) / (len(err_train)))
+
+    if not np.isfinite(fitness_train):
+        fitness_train = 1e10
 
     return fitness_train, 0.0

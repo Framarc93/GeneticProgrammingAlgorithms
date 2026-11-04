@@ -22,244 +22,214 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""
-This script is the main for the regression application. The user must select the algorithm and the benchmark
+"""Run configurable regression experiments and collect their results.
+
+Example: python -m examples.regression.main_regression --experiments 2 --population 20 --generations 6 --benchmark synthetic
 """
 
-import os
+import argparse
+import json
+import random
 import sys
+from datetime import datetime
+from pathlib import Path
+from time import perf_counter
 
-# Add the repo root to sys.path
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src")))
+# Support both direct execution and python -m.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from copy import copy
-from time import time
-
-import matplotlib.pyplot as plt
-import multiprocess
+import dill
 import numpy as np
+import pandas as pd
 import yaml
-from data.data_handling import retrieve_dataset_pmlb, select_testcase
-from deap import gp
-from evaluate_functions import evaluate_regression, evaluate_regression_noVal
-from yaml.loader import SafeLoader
+from deap import creator
 
-from genetic_programming_algorithms.gp_model_definition_functions import (
-    define_FIGP_model,
-    define_IGP_model,
-    define_MGGP_model,
-)
+from examples.regression.data.data_handling import retrieve_dataset_pmlb, select_testcase
+from examples.regression.evaluate_functions import evaluate_regression
+from examples.regression.result_analysis import collect_results
+from genetic_programming_algorithms import gp_model_definition_functions as models
 from genetic_programming_algorithms.main_functions import main_evolProcess
-from genetic_programming_algorithms.MGGP_utils import build_funcString, lst_matrix, lst_matrix_noVal
+from genetic_programming_algorithms.MGGP_utils import build_funcString, lst_matrix
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-#################################################################################################################
-
-# This section must remain outside the if __name__=="__main__" otherwise there are issue with the multiprocessing
-
-#################################################################################################################
-
-algo = "IGP"  # select the GP algorithm. Choose between IGP, FIGP and MGGP
-bench = "503_wind"  # select the benchmark
-
-match algo:
-    case "IGP":
-        define_GP_model = define_IGP_model
-        fitness_validation = True
-        if fitness_validation is True:
-            evaluation_function = evaluate_regression
-        else:
-            evaluation_function = evaluate_regression_noVal
-        evaluate_regression_fun = []
-    case "FIGP":
-        define_GP_model = define_FIGP_model
-        evaluation_function = evaluate_regression
-        fitness_validation = True
-        evaluate_regression_fun = []
-    case "MGGP":
-        define_GP_model = define_MGGP_model
-        fitness_validation = True
-        if fitness_validation is True:
-            evaluation_function = lst_matrix
-            evaluate_regression_fun = evaluate_regression
-        else:
-            evaluation_function = lst_matrix_noVal
-            evaluate_regression_fun = evaluate_regression_noVal
-    case _:
-        print("Select a GP algorithm between IGP, FIGP and MGGP.")
+BASE_DIR = Path(__file__).resolve().parent
 
 
-retrieve_dataset_pmlb(bench)  # download and shuffle dataset
-
-with open(BASE_DIR + "/regression_config.yaml") as f:
-    configs = yaml.load(f, Loader=SafeLoader)  # load configs
-
-nEph = configs["nEph"]
-Eph_max = configs["Eph_max"]
-limit_height = configs["limit_height"]  # Max height (complexity) of the gp law
-limit_size = configs["limit_size"]  # Max size (complexity) of the gp law
-size_pop = configs["size_pop"]
-size_gen = configs["size_gen"]  # Gen size
-cat_number_len = configs["cat_number_len"]
-cat_number_fit = configs["cat_number_fit_train"]
-cat_number_fit_val = configs["cat_number_fit_val"]
-fit_scale = configs["fit_scale"]
-fit_tol = configs["fit_tol"]
-ntot = 1  # configs['ntot']
-save_gen = configs["save_gen"]
-save_pop = configs["save_pop"]
-mutpb = configs["mutpb"]
-cxpb = configs["cxpb"]
-cx_lim = configs["cx_lim"]
-test_perc = configs["test_perc"]
-val_perc = configs["val_perc"]
-NgenesMax = configs["NgenesMax"]
-stdCxpb = configs["stdCxpb"]
-primitives_list = configs["primitives_list"]
-
-Mu = int(size_pop)
-Lambda = int(size_pop * 1.2)
-nbCPU = multiprocess.cpu_count()  # number of threads to use
-
-# create save folder
-save_path = BASE_DIR + "/" + configs["save_path"] + f"{algo}_{bench}/"
-try:
-    os.makedirs(save_path)
-except FileExistsError:
-    pass
-
-# define quantities to save
-to_save = np.array(["t_evaluate", "RMSE_train", "RMSE_test"])
-
-dataset_path = BASE_DIR + "/data"
-terminals, X_train, y_train, X_val, y_val, X_test, y_test, scaler = select_testcase(
-    bench, test_perc, val_perc, dataset_path
-)
-
-for n in range(ntot):
-    pset, creator, toolbox = define_GP_model(
-        terminals,
-        1,
-        nEph,
-        Eph_max,
-        limit_height,
-        limit_size,
-        n,
-        evaluation_function,
-        primitives_list,
-        kwargs={
-            "NgenesMax": NgenesMax,
-            "stdCxpb": stdCxpb,
-            "evaluate_regression": evaluate_regression_fun,
-            "fitness_validation": fitness_validation,
-        },
+def run_experiments(
+    configs, *, algorithm="IGP", benchmark="503_wind", output=None, seed=42, cpus=1
+):
+    """Run independent seeded searches on one saved, shared train/validation/test split."""
+    configs = dict(configs)
+    if algorithm not in {"IGP", "FIGP", "MGGP"}:
+        raise ValueError("Unknown algorithm")
+    if configs["ntot"] < 1 or configs["size_pop"] < 2 or configs["size_gen"] < 1 or cpus < 1:
+        raise ValueError("Require experiments >= 1, population >= 2, generations >= 1, CPUs >= 1")
+    if configs["val_perc"] <= 0:
+        raise ValueError("Batch analysis requires a separate validation split (val_perc > 0)")
+    root = (
+        Path(output)
+        if output
+        else BASE_DIR / "results" / f"{algorithm}_{benchmark}_{datetime.now():%Y%m%d_%H%M%S_%f}"
     )
-
-    if __name__ == "__main__":
-        save_path_iter = save_path + f"Sim{n}/"
-        try:
-            os.makedirs(save_path_iter)
-        except FileExistsError:
-            pass
-        print(f"----------------------- Iteration {n} ---------------------------")
-
-        start = time()
-
-        pop, log, hof, pop_statistics, ind_lengths, pset = main_evolProcess(
-            size_pop,
-            size_gen,
-            Mu,
-            Lambda,
-            cxpb,
-            mutpb,
-            nbCPU,
+    root.mkdir(parents=True, exist_ok=False)
+    random.seed(seed)
+    np.random.seed(seed)
+    if benchmark == "synthetic":
+        x = np.random.default_rng(seed).uniform(-1, 1, (120, 2))
+        frame = pd.DataFrame({"x0": x[:, 0], "x1": x[:, 1], "target": x[:, 0] ** 2 + x[:, 1]})
+        frame.to_csv(root / "synthetic_shuffled.csv", index=False)
+        dataset_path = root
+    else:
+        retrieve_dataset_pmlb(benchmark)
+        dataset_path = BASE_DIR / "data"
+    terminals, x_train, y_train, x_val, y_val, x_test, y_test, scaler = select_testcase(
+        benchmark, configs["test_perc"], configs["val_perc"], str(dataset_path)
+    )
+    np.savez(
+        root / "data_split.npz",
+        X_train=x_train,
+        y_train=y_train,
+        X_val=x_val,
+        y_val=y_val,
+        X_test=x_test,
+        y_test=y_test,
+        scaler_scale=scaler.scale_,
+        scaler_min=scaler.min_,
+    )
+    manifest = {
+        "algorithm": algorithm,
+        "benchmark": benchmark,
+        "seed": seed,
+        "cpus": cpus,
+        "configs": configs,
+        "selection": "minimum test RMSE among generation training champions",
+        "runs": [],
+    }
+    (root / "batch.json").write_text(json.dumps(manifest, indent=2))
+    for experiment in range(configs["ntot"]):
+        run_seed = seed + experiment
+        random.seed(run_seed)
+        np.random.seed(run_seed)
+        # DEAP's creator registry is global; do not reuse classes from a previous run.
+        for name in ("Fitness", "Individual", "SubIndividual", "Gene"):
+            if hasattr(creator, name):
+                delattr(creator, name)
+        pset, cr, toolbox = getattr(models, f"define_{algorithm}_model")(
+            terminals,
+            1,
+            configs["nEph"],
+            configs["Eph_max"],
+            configs["limit_height"],
+            configs["limit_size"],
+            experiment,
+            lst_matrix if algorithm == "MGGP" else evaluate_regression,
+            configs["primitives_list"],
+            kwargs={
+                "fitness_validation": True,
+                "NgenesMax": configs["NgenesMax"],
+                "stdCxpb": configs["stdCxpb"],
+                "evaluate_regression": evaluate_regression,
+            },
+        )
+        run_dir = root / f"Sim{experiment}"
+        run_dir.mkdir()
+        run_config = {**configs, "save_gen": True}  # Required for generation-champion selection.
+        start = perf_counter()
+        _, log, _, _, _, _ = main_evolProcess(
+            configs["size_pop"],
+            configs["size_gen"],
+            configs["size_pop"],
+            int(configs["size_pop"] * 1.2),
+            configs["cxpb"],
+            configs["mutpb"],
+            cpus,
             pset,
-            creator,
+            cr,
             toolbox,
-            configs=configs,
-            X_train=X_train,
+            configs=run_config,
+            X_train=x_train,
             y_train=y_train,
-            X_val=X_val,
+            X_val=x_val,
             y_val=y_val,
-            save_path_iter=save_path_iter,
+            save_path_iter=str(run_dir) + "/",
         )
+        elapsed = perf_counter() - start
+        candidates = []
+        for generation in range(len(log)):
+            with (run_dir / f"Best_ind_{generation}").open("rb") as stream:
+                champion = dill.load(stream)
+            expression = (
+                build_funcString(champion.w, champion) if algorithm == "MGGP" else str(champion)
+            )
+            # All scores belong to this same candidate, with its training-fitted weights.
+            train_score, _, val_score, _ = evaluate_regression(
+                expression,
+                toolbox.compile,
+                kwargs={"X_train": x_train, "y_train": y_train, "X_val": x_val, "y_val": y_val},
+            )
+            _, _, test_score, _ = evaluate_regression(
+                expression,
+                toolbox.compile,
+                kwargs={"X_train": x_train, "y_train": y_train, "X_val": x_test, "y_val": y_test},
+            )
+            nodes = sum(map(len, champion)) if algorithm == "MGGP" else len(champion)
+            candidates.append(
+                {
+                    "selected_generation": generation,
+                    "train_rmse": float(train_score),
+                    "validation_rmse": float(val_score),
+                    "test_rmse": float(test_score),
+                    "nodes": nodes,
+                    "expression": expression,
+                }
+            )
+        best = min(candidates, key=lambda candidate: candidate["test_rmse"])
+        record = {
+            "experiment": experiment,
+            "seed": run_seed,
+            "evolution_seconds": elapsed,
+            **best,
+            "training_history": [float(row[0]) for row in log.chapters["fitness"].select("min")],
+        }
+        (run_dir / "result.json").write_text(json.dumps(record, indent=2))
+        (run_dir / "generation_scores.json").write_text(json.dumps(candidates, indent=2))
+        manifest["runs"].append(run_dir.name)
+        (root / "batch.json").write_text(json.dumps(manifest, indent=2))
+    collect_results(root)
+    return root
 
-        end = time()
 
-        t_offdesign = end - start
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", type=Path, default=BASE_DIR / "regression_config.yaml")
+    parser.add_argument("--experiments", type=int)
+    parser.add_argument("--population", type=int)
+    parser.add_argument("--generations", type=int)
+    parser.add_argument("--init-repeat", type=int)
+    parser.add_argument("--algorithm", choices=["IGP", "FIGP", "MGGP"], default="IGP")
+    parser.add_argument("--benchmark", default="503_wind")
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--cpus", type=int, default=1)
+    parser.add_argument("--output", type=Path)
+    args = parser.parse_args()
+    configs = yaml.safe_load(args.config.read_text())
+    for option, key in (
+        (args.experiments, "ntot"),
+        (args.population, "size_pop"),
+        (args.generations, "size_gen"),
+        (args.init_repeat, "init_repeat"),
+    ):
+        if option is not None:
+            configs[key] = option
+    output = run_experiments(
+        configs,
+        algorithm=args.algorithm,
+        benchmark=args.benchmark,
+        output=args.output,
+        seed=args.seed,
+        cpus=args.cpus,
+    )
+    print(f"Batch results: {output}")
 
-        best_ind = hof[-1]
-        if algo == "MGGP":
-            string = str(best_ind.w[0])
-            st = 1
-            while st <= len(best_ind):
-                string = string + "+" + str(best_ind.w[st]) + "*" + str(best_ind[st - 1])
-                st += 1
-            print("\n Best training individual: ", string)
-        else:
-            print("\n Best training individual: ", best_ind)
-        print("Best training fitness:", best_ind.fitness.values[0])
 
-        fitness_test = []
-        min_test = 100
-        RMSE_train = 0
-        for i in range(len(log)):
-            best_ind = np.load(save_path_iter + f"Best_ind_{i}", allow_pickle=True)
-
-            if algo == "MGGP":
-                string = str(best_ind.w[0])
-                st = 1
-                while st <= len(best_ind):
-                    string = string + "+" + str(best_ind.w[st]) + "*" + str(best_ind[st - 1])
-                    st += 1
-                best_ind = build_funcString(best_ind.w, best_ind)
-
-            f = gp.compile(best_ind, pset=pset)
-            y_best_test = f(*X_test)
-            err_test = y_test - y_best_test
-            RMSE_test = np.sqrt(sum(err_test**2) / (len(err_test)))
-            fitness_test.append(RMSE_test)
-            if RMSE_test < min_test:
-                min_test = copy(RMSE_test)
-                y_best_train = f(*X_train)
-                err_train = y_train - y_best_train
-                RMSE_train = np.sqrt(sum(err_train**2) / (len(err_train)))
-
-        # Plot train, validation and test fitness evolution
-        plt.figure(0)
-        plt.plot(
-            np.arange(len(log)),
-            np.array(log.chapters["fitness"].select("min"))[:, 0],
-            label="Train",
-        )
-        plt.plot(
-            np.arange(len(log)),
-            np.array(log.chapters["fitness_val"].select("min"))[:, 0],
-            label="Validation",
-        )
-        plt.plot(np.arange(len(log)), fitness_test, label="Test")
-        plt.xlabel("Generations")
-        plt.ylabel("RMSE")
-        plt.legend(loc="best")
-        plt.savefig(save_path_iter + "fitness_evol.jpg")
-
-        # save data
-        np.save(
-            save_path + f"{n}_{algo}_{bench}_train_fit_evol.npy",
-            np.array(log.chapters["fitness"].select("min"))[:, 0],
-        )
-        np.save(save_path + f"{n}_{algo}_{bench}_test_fit_evol.npy", fitness_test)
-        np.save(
-            save_path + f"{n}_{algo}_{bench}_val_fit_evol.npy",
-            np.array(log.chapters["fitness_val"].select("min"))[:, 0],
-        )
-        np.save(save_path + f"{n}_{algo}_{bench}_POP_STATS", pop_statistics)
-        np.save(save_path + f"{n}_{algo}_{bench}_IND_LENGTHS", ind_lengths)
-        np.save(save_path + f"{n}_{algo}_{bench}_GEN", log.select("gen"))
-        np.save(
-            save_path + f"{n}_{algo}_{bench}_FIT", np.array(log.chapters["fitness"].select("min"))
-        )
-        to_save = np.vstack((to_save, [t_offdesign, RMSE_train, min(fitness_test)]))
-        np.save(save_path + f"{n}_{algo}_{bench}_T_RMSE", to_save)
+if __name__ == "__main__":
+    main()
