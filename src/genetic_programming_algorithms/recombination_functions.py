@@ -294,7 +294,8 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
     The modification consists in:
         - use a while loop instead of a for loop
-        - pass the best of the 2 children produced during crossover
+        - retain both crossover children for evaluation before survivor selection
+        - choose randomly between children when only one offspring slot remains
     """
     assert (cxpb + mutpb) <= 1.0, (
         "The sum of the crossover and mutation probabilities must be smaller or equal to 1.0."
@@ -306,12 +307,15 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
         if op_choice < cxpb:  # Apply crossover
             ind1, ind2 = map(toolbox.clone, random.sample(population, 2))
             ind1, ind2 = deepcopy(toolbox.mate(ind1, ind2))
-            if sum(ind1.fitness.wvalues) > sum(ind2.fitness.wvalues):
-                del ind1.fitness.values
-                offspring.append(ind1)
+            # Changed trees must be evaluated before their quality can be compared.
+            for child in (ind1, ind2):
+                del child.fitness.values
+                if hasattr(child, "fitness_validation"):
+                    del child.fitness_validation.values
+            if lambda_ - len(offspring) >= 2:
+                offspring.extend((ind1, ind2))
             else:
-                del ind2.fitness.values
-                offspring.append(ind2)
+                offspring.append(random.choice((ind1, ind2)))
         elif op_choice < cxpb + mutpb:  # Apply mutation
             ind = toolbox.clone(random.choice(population))
             (ind,) = deepcopy(toolbox.mutate(ind))

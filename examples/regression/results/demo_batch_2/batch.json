@@ -1,0 +1,46 @@
+{
+  "algorithm": "IGP",
+  "benchmark": "synthetic",
+  "seed": 42,
+  "cpus": 1,
+  "configs": {
+    "nEph": 5,
+    "Eph_max": 10,
+    "limit_height": 40,
+    "limit_size": 40,
+    "size_pop": 20,
+    "size_gen": 6,
+    "mutpb": 0.2,
+    "cxpb": 0.8,
+    "init_repeat": 2,
+    "cx_lim": 0.75,
+    "fit_tol": 1e-10,
+    "ntot": 2,
+    "save_gen": true,
+    "save_pop": true,
+    "save_path": "results/",
+    "cat_number_len": 6,
+    "cat_number_fit_train": 6,
+    "cat_number_fit_val": 6,
+    "fit_scale": 0.5,
+    "NgenesMax": 7,
+    "stdCxpb": 0.7,
+    "test_perc": 0.2,
+    "val_perc": 0.2,
+    "primitives_list": [
+      "add",
+      "sub",
+      "mul",
+      "tanh",
+      "sin",
+      "cos",
+      "TriAdd",
+      "TriMul"
+    ]
+  },
+  "selection": "minimum test RMSE among generation training champions",
+  "runs": [
+    "Sim0",
+    "Sim1"
+  ]
+}
